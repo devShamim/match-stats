@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { supabase } from '@/lib/supabaseClient'
 import { Match } from '@/types'
 import { X, Save, Trophy } from 'lucide-react'
 
@@ -52,10 +53,14 @@ export default function ScoreUpdateModal({ match, isOpen, onClose, onSave }: Sco
     setLoading(true)
 
     try {
+      // Get the current session to include auth token
+      const { data: { session } } = await supabase.auth.getSession()
+
       const response = await fetch('/api/update-match-score', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
         },
         body: JSON.stringify({
           matchId: match.id,

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
+import { supabase } from '@/lib/supabaseClient'
 import { Match } from '@/types'
 import {
   X, Save, Plus, Minus, Clock, Trophy, Users, Target,
@@ -210,10 +211,14 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
 
     setLoading(true)
     try {
+      // Get the current session to include auth token
+      const { data: { session } } = await supabase.auth.getSession()
+
       const response = await fetch('/api/update-match-details', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
         },
         body: JSON.stringify({
           matchId: match.id,
