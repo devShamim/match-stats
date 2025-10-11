@@ -296,6 +296,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         stats: aggregatedStats
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store'
+        }
       })
     } else {
       // Get overall leaderboards
@@ -368,6 +375,13 @@ export async function GET(request: NextRequest) {
         leaderboards: {
           top_scorers: topScorers,
           top_assists: topAssists
+        }
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store'
         }
       })
     }

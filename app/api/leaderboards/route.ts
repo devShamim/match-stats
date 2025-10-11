@@ -124,6 +124,13 @@ export async function GET() {
         topPerformers,
         mostMinutesPlayed
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
     })
 
   } catch (error: any) {

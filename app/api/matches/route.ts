@@ -36,6 +36,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       matches: matches || []
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
     })
 
   } catch (error: any) {
