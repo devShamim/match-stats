@@ -1,0 +1,83 @@
+---
+alwaysApply: true
+---
+# Indoor Football Stats App
+
+## 🔹 General Guidelines
+- Always use **Next.js App Router** with **TypeScript**.
+- Style exclusively with **Shadcn UI**.
+- Use functional React components and hooks.
+- Use `async/await` instead of `.then()` for all async code.
+- Provide **semantic HTML** and accessible attributes (aria-labels).
+
+## 🔹 Project Structure
+- Place pages under `/app`:
+  - `/auth` → login/register
+  - `/dashboard` → main dashboard
+  - `/players` → list + detail pages
+  - `/matches` → list + detail pages
+  - `/admin` → admin-only forms
+- Put reusable UI components in `/components`.
+- Put Supabase client & helper functions in `/lib`.
+- Define all TypeScript interfaces in `/types`.
+
+## 🔹 Supabase / Database
+- Use **Supabase JS SDK** for all database and auth operations.
+- Follow this schema:
+  - `players(id, name, email, photo_url)`
+  - `matches(id, type, date, opponent, score_teamA, score_teamB)`
+  - `match_players(id, match_id, player_id, team)`
+  - `stats(id, match_player_id, goals, assists)`
+- Handle Row Level Security so only admins can insert/update, players can read.
+
+## 🔹 Auth & Roles
+- Use Supabase Auth with email/password (or magic link).
+- Create a `UserContext` provider with `useUser()` hook to expose session + role.
+- Protect admin pages with a middleware or HOC.
+
+## 🔹 Data Fetching & Mutations
+- Server components for SSR data (players, matches, stats).
+- Client components for forms and mutations.
+- Always handle loading and error states with simple shadcn ui components.
+
+## 🔹 UI/UX Rules
+- Dashboard-like layout with sidebar navigation (Dashboard, Players, Matches, Admin).
+- Mobile-friendly responsive design.
+- Forms:
+  - Minimal input fields
+  - Basic validation and error messages
+- Tables:
+  - Simple HTML tables styled with shadcn ui
+  - Highlight top 3 rows visually in leaderboards
+
+## 🔹 Admin Panel Rules
+- Separate CRUD forms into their own components (`PlayerForm.tsx`, `MatchForm.tsx`).
+- Adding a match should redirect to a player assignment page.
+- Player assignment uses checkboxes with team selector.
+
+## 🔹 State Management
+- Local state (`useState`) for forms and filters.
+- `UserContext` for global auth state.
+- No Redux for MVP.
+
+## 🔹 Error Handling & Feedback
+- Show toast/alert after successful CRUD actions.
+- Show clear error messages when Supabase returns errors.
+
+## 🔹 Naming Conventions
+- Components: `PascalCase` (e.g. `PlayerCard.tsx`).
+- Hooks: `useCamelCase` (e.g. `useUser`).
+- Supabase tables: singular (`players`, `matches`, `match_players`, `stats`).
+- Supabase columns: `snake_case`.
+
+## 🔹 Out of Scope for MVP
+- No graphs, charts, or export features.
+- No complex tournament scheduling.
+- No notifications.
+
+## 🔹 Cursor Behaviour
+- For each new feature:
+  - Generate both server (data fetching) and client (form/mutation) components.
+  - Keep components small and reusable.
+- Always explain code in comments.
+- Do not add unrequested dependencies.
