@@ -10,6 +10,7 @@ import { useUser } from '@/context/UserContext'
 import { useToast } from '@/components/ui/toast'
 import PlayerCard from '@/components/PlayerCard'
 import PlayerEditModal from '@/components/PlayerEditModal'
+import DebugSupabase from '@/components/DebugSupabase'
 import { Player } from '@/types'
 import { Plus, Users, Search, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -142,6 +143,9 @@ export default function PlayersPage() {
 
   return (
     <div className="p-6">
+      {/* Debug Component - Remove after fixing */}
+      <DebugSupabase />
+      
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Players</h1>
