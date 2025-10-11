@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           .select(`
             id,
             created_at,
-            user_profile:user_profiles!inner(name, status)
+            user_profile:user_profiles(name, status)
           `)
           .order('created_at', { ascending: false })
           .limit(3),
@@ -124,16 +124,22 @@ export async function GET(request: NextRequest) {
 
     // Process recent activity
     const [recentPlayersActivity, recentMatchesActivity] = recentActivityResult
-    const recentActivity = []
+    const recentActivity: Array<{
+      type: string
+      message: string
+      timestamp: string
+      status: string
+    }> = []
 
     // Add recent players to activity
     if (recentPlayersActivity.data) {
       recentPlayersActivity.data.forEach(player => {
+        const userProfile = Array.isArray(player.user_profile) ? player.user_profile[0] : player.user_profile
         recentActivity.push({
           type: 'player_registered',
-          message: `Player registered: ${player.user_profile?.name || 'Unknown'}`,
+          message: `Player registered: ${userProfile?.name || 'Unknown'}`,
           timestamp: player.created_at,
-          status: player.user_profile?.status || 'unknown'
+          status: userProfile?.status || 'unknown'
         })
       })
     }
@@ -159,12 +165,15 @@ export async function GET(request: NextRequest) {
     recentActivity.splice(5)
 
     // Format recent players for display
-    const formattedRecentPlayers = recentPlayersResult.data?.map(player => ({
-      id: player.id,
-      name: player.user_profile?.name || 'Unknown',
-      status: player.user_profile?.status || 'unknown',
-      createdAt: player.created_at
-    })) || []
+    const formattedRecentPlayers = recentPlayersResult.data?.map(player => {
+      const userProfile = Array.isArray(player.user_profile) ? player.user_profile[0] : player.user_profile
+      return {
+        id: player.id,
+        name: userProfile?.name || 'Unknown',
+        status: userProfile?.status || 'unknown',
+        createdAt: player.created_at
+      }
+    }) || []
 
     // Format recent matches for display
     const formattedRecentMatches = recentMatchesResult.data?.map(match => ({

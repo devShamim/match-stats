@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth'
+import { verifyAdminAuth, supabaseAdmin } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {

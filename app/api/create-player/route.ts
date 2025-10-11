@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth'
+import { verifyAdminAuth, supabaseAdmin } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First, create a Supabase Auth user
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim(),
       password: 'TempPassword123!', // Temporary password - user should change this
       email_confirm: true, // Auto-confirm the email
@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (authError) {
-      console.error('Auth user creation error:', authError)
+    if (createUserError) {
+      console.error('Auth user creation error:', createUserError)
       return NextResponse.json(
-        { error: `Failed to create auth user: ${authError.message}` },
+        { error: `Failed to create auth user: ${createUserError.message}` },
         { status: 400 }
       )
     }

@@ -219,7 +219,18 @@ export async function GET(request: NextRequest) {
         total_red_cards: 0,
         total_minutes: 0,
         matches_played: playerStats.length,
-        recent_matches: []
+        recent_matches: [] as Array<{
+          match_id: string
+          date: string
+          opponent: string
+          teamA_name: string
+          teamB_name: string
+          goals: number
+          assists: number
+          yellow_cards: number
+          red_cards: number
+          minutes_played: number
+        }>
       }
 
       // Process each match_player and their stats
