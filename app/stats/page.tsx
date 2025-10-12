@@ -51,7 +51,7 @@ export default function PublicStatsView() {
   const fetchPublicStats = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/stats-page', {
+      const response = await fetch(`/api/stats-page?t=${Date.now()}`, {
         cache: 'no-store',
         next: { revalidate: 0 }
       })

@@ -38,7 +38,7 @@ export default function LeaderboardsPage() {
     const fetchLeaderboardsData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/leaderboards', {
+        const response = await fetch(`/api/leaderboards?t=${Date.now()}`, {
           cache: 'no-store',
           next: { revalidate: 0 }
         })

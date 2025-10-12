@@ -31,7 +31,7 @@ export default function PlayersPage() {
   const fetchPlayers = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/players', {
+      const response = await fetch(`/api/players?t=${Date.now()}`, {
         cache: 'no-store',
         next: { revalidate: 0 }
       })
@@ -86,6 +86,8 @@ export default function PlayersPage() {
     setFilteredPlayers(prev =>
       prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p)
     )
+    // Force refetch to ensure we have the latest data
+    fetchPlayers()
   }
 
   const handleCloseModal = () => {

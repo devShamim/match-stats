@@ -37,7 +37,7 @@ export default function MatchesPage() {
   const fetchMatches = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/matches', {
+      const response = await fetch(`/api/matches?t=${Date.now()}`, {
         cache: 'no-store',
         next: { revalidate: 0 }
       })
@@ -99,6 +99,8 @@ export default function MatchesPage() {
     setFilteredMatches(prev =>
       prev.map(m => m.id === updatedMatch.id ? updatedMatch : m)
     )
+    // Force refetch to ensure we have the latest data
+    fetchMatches()
   }
 
   const handleCloseModal = () => {

@@ -10,6 +10,7 @@ import ImageUpload from '@/components/ImageUpload'
 import { supabase } from '@/lib/supabaseClient'
 import { Player } from '@/types'
 import { X, Save, User } from 'lucide-react'
+import { useRefresh } from '@/lib/useRefresh'
 
 const POSITIONS = [
   'Goalkeeper',
@@ -40,6 +41,7 @@ interface EditFormData {
 export default function PlayerEditModal({ player, isOpen, onClose, onSave }: PlayerEditModalProps) {
   const { showToast } = useToast()
   const router = useRouter()
+  const { refresh } = useRefresh()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<EditFormData>({
     name: '',
@@ -113,7 +115,7 @@ export default function PlayerEditModal({ player, isOpen, onClose, onSave }: Pla
 
       showToast('Player updated successfully!', 'success')
       onSave(result.player)
-      router.refresh() // Force refresh to get updated data
+      refresh() // Use aggressive refresh mechanism
       onClose()
     } catch (err: any) {
       console.error('Player update error:', err)

@@ -51,7 +51,7 @@ function DashboardContent() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/dashboard', {
+        const response = await fetch(`/api/dashboard?t=${Date.now()}`, {
           cache: 'no-store',
           next: { revalidate: 0 }
         })

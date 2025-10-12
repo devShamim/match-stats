@@ -51,7 +51,7 @@ function AdminPageContent() {
       // Get the current session to include auth token
       const { data: { session } } = await supabase.auth.getSession()
 
-      const response = await fetch('/api/admin-dashboard', {
+      const response = await fetch(`/api/admin-dashboard?t=${Date.now()}`, {
         cache: 'no-store',
         next: { revalidate: 0 },
         headers: {

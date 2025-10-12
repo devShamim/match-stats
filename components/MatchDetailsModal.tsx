@@ -13,6 +13,7 @@ import {
   X, Save, Plus, Minus, Clock, Trophy, Users, Target,
   Zap, AlertTriangle, UserCheck, UserX, Shield
 } from 'lucide-react'
+import { useRefresh } from '@/lib/useRefresh'
 
 interface MatchDetailsModalProps {
   match: Match | null
@@ -71,6 +72,7 @@ interface MatchDetails {
 export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: MatchDetailsModalProps) {
   const { showToast } = useToast()
   const router = useRouter()
+  const { refresh } = useRefresh()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'stats'>('goals')
 
@@ -106,7 +108,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     if (!match) return
 
     try {
-      const response = await fetch(`/api/match-details/${match.id}`, {
+      const response = await fetch(`/api/match-details/${match.id}?t=${Date.now()}`, {
         cache: 'no-store',
         next: { revalidate: 0 }
       })
@@ -239,7 +241,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
 
       showToast('Match details updated successfully!', 'success')
       onSave(result.match)
-      router.refresh() // Force refresh to get updated data
+      refresh() // Use aggressive refresh mechanism
       onClose()
     } catch (err: any) {
       console.error('Match details update error:', err)
