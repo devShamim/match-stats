@@ -115,7 +115,12 @@ export default function PlayerEditModal({ player, isOpen, onClose, onSave }: Pla
 
       showToast('Player updated successfully!', 'success')
       onSave(result.player)
-      refresh() // Use aggressive refresh mechanism
+
+      // Ultimate cache buster - force page reload
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+
       onClose()
     } catch (err: any) {
       console.error('Player update error:', err)

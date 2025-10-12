@@ -82,7 +82,12 @@ export default function ScoreUpdateModal({ match, isOpen, onClose, onSave }: Sco
 
       showToast('Match score updated successfully!', 'success')
       onSave(result.match)
-      refresh() // Use aggressive refresh mechanism
+
+      // Ultimate cache buster - force page reload
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+
       onClose()
     } catch (err: any) {
       console.error('Score update error:', err)

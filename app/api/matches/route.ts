@@ -38,10 +38,16 @@ export async function GET(request: NextRequest) {
       matches: matches || []
     }, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'Surrogate-Control': 'no-store'
+        'Surrogate-Control': 'no-store',
+        'CDN-Cache-Control': 'no-cache',
+        'Vercel-CDN-Cache-Control': 'no-cache',
+        'Cloudflare-CDN-Cache-Control': 'no-cache',
+        'X-Cache-Control': 'no-cache',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': `"${Date.now()}"`
       }
     })
 

@@ -97,7 +97,11 @@ export default function PlayerCreationForm() {
 
       setSuccess(true)
       showToast(`Player ${formData.name} created successfully!`, 'success')
-      refresh() // Use aggressive refresh mechanism
+
+      // Ultimate cache buster - force page reload
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
     } catch (err: any) {
       console.error('Player creation error:', err)
       const errorMessage = err.message || 'Failed to create player. Please try again.'

@@ -241,7 +241,12 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
 
       showToast('Match details updated successfully!', 'success')
       onSave(result.match)
-      refresh() // Use aggressive refresh mechanism
+
+      // Ultimate cache buster - force page reload
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+
       onClose()
     } catch (err: any) {
       console.error('Match details update error:', err)
