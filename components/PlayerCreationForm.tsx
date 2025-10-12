@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabaseClient'
 import ImageUpload from '@/components/ImageUpload'
 import { UserPlus, Mail, Phone, MapPin } from 'lucide-react'
 import { useRefresh } from '@/lib/useRefresh'
+import { useUser } from '@/context/UserContext'
 
 const POSITIONS = [
   'Goalkeeper',
@@ -34,6 +35,7 @@ export default function PlayerCreationForm() {
   const { showToast } = useToast()
   const router = useRouter()
   const { refresh } = useRefresh()
+  const { forceRefresh } = useUser()
   const [formData, setFormData] = useState<PlayerFormData>({
     name: '',
     email: '',
@@ -98,10 +100,13 @@ export default function PlayerCreationForm() {
       setSuccess(true)
       showToast(`Player ${formData.name} created successfully!`, 'success')
 
-      // Ultimate cache buster - force page reload
+      // Force refresh authentication state and data
+      await forceRefresh()
+
+      // Ultimate cache buster - force page reload as backup
       setTimeout(() => {
         window.location.reload()
-      }, 500)
+      }, 1000)
     } catch (err: any) {
       console.error('Player creation error:', err)
       const errorMessage = err.message || 'Failed to create player. Please try again.'

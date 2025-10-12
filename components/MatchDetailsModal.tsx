@@ -14,6 +14,7 @@ import {
   Zap, AlertTriangle, UserCheck, UserX, Shield
 } from 'lucide-react'
 import { useRefresh } from '@/lib/useRefresh'
+import { useUser } from '@/context/UserContext'
 
 interface MatchDetailsModalProps {
   match: Match | null
@@ -73,6 +74,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const { showToast } = useToast()
   const router = useRouter()
   const { refresh } = useRefresh()
+  const { forceRefresh } = useUser()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'stats'>('goals')
 
@@ -242,10 +244,13 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
       showToast('Match details updated successfully!', 'success')
       onSave(result.match)
 
-      // Ultimate cache buster - force page reload
+      // Force refresh authentication state and data
+      await forceRefresh()
+
+      // Ultimate cache buster - force page reload as backup
       setTimeout(() => {
         window.location.reload()
-      }, 500)
+      }, 1000)
 
       onClose()
     } catch (err: any) {

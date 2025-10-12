@@ -18,6 +18,7 @@ interface UserContextType {
   isApproved: boolean
   isPending: boolean
   refreshUserProfile: () => Promise<void>
+  forceRefresh: () => Promise<void>
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -30,8 +31,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      // Force fresh session and clear any cached auth state
+      const { data: { session: freshSession } } = await supabase.auth.getSession()
+
+      if (!freshSession) {
+        setUserProfile(null)
+        return
+      }
+
+      // Use cache-busting approach for user profile
       const profile = await getUserProfile(userId)
       setUserProfile(profile)
+
+      // Force a small delay to ensure state updates
+      await new Promise(resolve => setTimeout(resolve, 100))
     } catch (error) {
       console.error('Error fetching user profile:', error)
       setUserProfile(null)
@@ -105,8 +118,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUserProfile = async () => {
     if (user) {
-      await fetchUserProfile(user.id)
+      // Force clear all cached state first
+      setUserProfile(null)
+      setLoading(true)
+
+      // Force fresh session
+      const { data: { session: freshSession } } = await supabase.auth.getSession()
+
+      if (freshSession?.user) {
+        await fetchUserProfile(freshSession.user.id)
+      }
+
+      setLoading(false)
     }
+  }
+
+  // Add a force refresh function that clears everything
+  const forceRefresh = async () => {
+    setLoading(true)
+    setUserProfile(null)
+
+    // Force fresh session
+    const { data: { session: freshSession } } = await supabase.auth.getSession()
+    setSession(freshSession)
+    setUser(freshSession?.user ?? null)
+
+    if (freshSession?.user) {
+      await fetchUserProfile(freshSession.user.id)
+    }
+
+    setLoading(false)
   }
 
   // Computed properties
@@ -126,6 +167,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     isApproved,
     isPending,
     refreshUserProfile,
+    forceRefresh,
   }
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
