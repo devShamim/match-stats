@@ -64,14 +64,8 @@ export default function PlayerStatsPage() {
 
       // Fetch player info and stats in parallel
       const [playerResponse, statsResponse] = await Promise.all([
-        fetch(`/api/players/${playerId}?t=${Date.now()}`, {
-          cache: 'no-store',
-          next: { revalidate: 0 }
-        }),
-        fetch(`/api/player-stats?playerId=${playerId}&t=${Date.now()}`, {
-          cache: 'no-store',
-          next: { revalidate: 0 }
-        })
+        fetch(`/api/players/${playerId}?t=${Date.now()}`),
+        fetch(`/api/player-stats?playerId=${playerId}&t=${Date.now()}`)
       ])
 
       if (!playerResponse.ok || !statsResponse.ok) {

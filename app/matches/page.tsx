@@ -14,6 +14,7 @@ import MatchDetailsView from '@/components/MatchDetailsView'
 import { Match } from '@/types'
 import { Plus, Calendar, Search, Loader2, Filter } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function MatchesPage() {
   const { isAdmin } = useUser()
@@ -37,10 +38,7 @@ export default function MatchesPage() {
   const fetchMatches = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/matches?t=${Date.now()}`, {
-        cache: 'no-store',
-        next: { revalidate: 0 }
-      })
+      const response = await fetch(`/api/matches?t=${Date.now()}`)
       if (!response.ok) {
         throw new Error('Failed to fetch matches')
       }
@@ -82,9 +80,43 @@ export default function MatchesPage() {
     setFilteredMatches(filtered)
   }, [searchTerm, statusFilter, typeFilter, matches])
 
-  // Load matches on component mount
+  // Load matches on component mount and set up realtime subscription
   useEffect(() => {
     fetchMatches()
+
+    // Set up Supabase Realtime subscription for matches table
+    const channel = supabase
+      .channel('matches-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches'
+        },
+        (payload) => {
+          console.log('Matches table change detected:', payload)
+          fetchMatches() // Refresh data automatically
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'teams'
+        },
+        (payload) => {
+          console.log('Teams table change detected:', payload)
+          fetchMatches() // Refresh data automatically
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleUpdateScore = (match: Match) => {

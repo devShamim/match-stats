@@ -9,8 +9,6 @@ import { useToast } from '@/components/ui/toast'
 import { supabase } from '@/lib/supabaseClient'
 import { Match } from '@/types'
 import { X, Save, Trophy } from 'lucide-react'
-import { useRefresh } from '@/lib/useRefresh'
-import { useUser } from '@/context/UserContext'
 
 interface ScoreUpdateModalProps {
   match: Match | null
@@ -28,8 +26,6 @@ interface ScoreFormData {
 export default function ScoreUpdateModal({ match, isOpen, onClose, onSave }: ScoreUpdateModalProps) {
   const { showToast } = useToast()
   const router = useRouter()
-  const { refresh } = useRefresh()
-  const { forceRefresh } = useUser()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<ScoreFormData>({
     score_teamA: '0',
@@ -84,15 +80,6 @@ export default function ScoreUpdateModal({ match, isOpen, onClose, onSave }: Sco
 
       showToast('Match score updated successfully!', 'success')
       onSave(result.match)
-
-      // Force refresh authentication state and data
-      await forceRefresh()
-
-      // Ultimate cache buster - force page reload as backup
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
-
       onClose()
     } catch (err: any) {
       console.error('Score update error:', err)

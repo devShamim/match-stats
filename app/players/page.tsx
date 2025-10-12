@@ -13,6 +13,7 @@ import PlayerEditModal from '@/components/PlayerEditModal'
 import { Player } from '@/types'
 import { Plus, Users, Search, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function PlayersPage() {
   const { isAdmin } = useUser()
@@ -31,10 +32,7 @@ export default function PlayersPage() {
   const fetchPlayers = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/players?t=${Date.now()}`, {
-        cache: 'no-store',
-        next: { revalidate: 0 }
-      })
+      const response = await fetch(`/api/players?t=${Date.now()}`)
       if (!response.ok) {
         throw new Error('Failed to fetch players')
       }
@@ -65,9 +63,43 @@ export default function PlayersPage() {
     }
   }, [searchTerm, players])
 
-  // Load players on component mount
+  // Load players on component mount and set up realtime subscription
   useEffect(() => {
     fetchPlayers()
+
+    // Set up Supabase Realtime subscription for players table
+    const channel = supabase
+      .channel('players-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'players'
+        },
+        (payload) => {
+          console.log('Players table change detected:', payload)
+          fetchPlayers() // Refresh data automatically
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles'
+        },
+        (payload) => {
+          console.log('User profiles table change detected:', payload)
+          fetchPlayers() // Refresh data automatically
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleEditPlayer = (player: Player) => {

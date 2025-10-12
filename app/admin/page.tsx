@@ -52,8 +52,6 @@ function AdminPageContent() {
       const { data: { session } } = await supabase.auth.getSession()
 
       const response = await fetch(`/api/admin-dashboard?t=${Date.now()}`, {
-        cache: 'no-store',
-        next: { revalidate: 0 },
         headers: {
           ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
         }
