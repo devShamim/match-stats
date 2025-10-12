@@ -31,7 +31,10 @@ export default function PlayersPage() {
   const fetchPlayers = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/players')
+      const response = await fetch('/api/players', {
+        cache: 'no-store',
+        next: { revalidate: 0 }
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch players')
       }

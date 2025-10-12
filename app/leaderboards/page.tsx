@@ -38,7 +38,10 @@ export default function LeaderboardsPage() {
     const fetchLeaderboardsData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/leaderboards')
+        const response = await fetch('/api/leaderboards', {
+          cache: 'no-store',
+          next: { revalidate: 0 }
+        })
         if (!response.ok) {
           throw new Error('Failed to fetch leaderboards data')
         }

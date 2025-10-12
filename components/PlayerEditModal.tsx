@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,6 +39,7 @@ interface EditFormData {
 
 export default function PlayerEditModal({ player, isOpen, onClose, onSave }: PlayerEditModalProps) {
   const { showToast } = useToast()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<EditFormData>({
     name: '',
@@ -111,6 +113,7 @@ export default function PlayerEditModal({ player, isOpen, onClose, onSave }: Pla
 
       showToast('Player updated successfully!', 'success')
       onSave(result.player)
+      router.refresh() // Force refresh to get updated data
       onClose()
     } catch (err: any) {
       console.error('Player update error:', err)

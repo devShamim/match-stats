@@ -48,7 +48,14 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ success: true, player })
+    return NextResponse.json({ success: true, player }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    })
   } catch (error: any) {
     console.error('Unexpected error:', error)
     return NextResponse.json(

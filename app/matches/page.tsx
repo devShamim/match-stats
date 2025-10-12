@@ -37,7 +37,10 @@ export default function MatchesPage() {
   const fetchMatches = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/matches')
+      const response = await fetch('/api/matches', {
+        cache: 'no-store',
+        next: { revalidate: 0 }
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch matches')
       }

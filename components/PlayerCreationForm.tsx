@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -93,6 +94,7 @@ export default function PlayerCreationForm() {
 
       setSuccess(true)
       showToast(`Player ${formData.name} created successfully!`, 'success')
+      router.refresh() // Force refresh to get updated data
     } catch (err: any) {
       console.error('Player creation error:', err)
       const errorMessage = err.message || 'Failed to create player. Please try again.'

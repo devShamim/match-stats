@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -69,6 +70,7 @@ interface MatchDetails {
 
 export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: MatchDetailsModalProps) {
   const { showToast } = useToast()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'stats'>('goals')
 
@@ -104,7 +106,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     if (!match) return
 
     try {
-      const response = await fetch(`/api/match-details/${match.id}`)
+      const response = await fetch(`/api/match-details/${match.id}`, {
+        cache: 'no-store',
+        next: { revalidate: 0 }
+      })
       if (response.ok) {
         const data = await response.json()
 
@@ -234,6 +239,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
 
       showToast('Match details updated successfully!', 'success')
       onSave(result.match)
+      router.refresh() // Force refresh to get updated data
       onClose()
     } catch (err: any) {
       console.error('Match details update error:', err)
