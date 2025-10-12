@@ -31,6 +31,7 @@ interface PlayerFormData {
 
 export default function PlayerCreationForm() {
   const { showToast } = useToast()
+  const router = useRouter()
   const [formData, setFormData] = useState<PlayerFormData>({
     name: '',
     email: '',
