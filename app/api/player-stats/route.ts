@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+import { supabaseAdmin } from '@/lib/auth'
 
 // Function to assign stats to players based on match events
 export async function POST(request: NextRequest) {
@@ -25,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get match events
-    const { data: events, error: eventsError } = await supabaseAdmin
+    const { data: events, error: eventsError } = await supabaseAdmin()
       .from('match_events')
       .select('*')
       .eq('match_id', matchId)
@@ -39,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get match players to map player names to player IDs
-    const { data: matchPlayers, error: matchPlayersError } = await supabaseAdmin
+    const { data: matchPlayers, error: matchPlayersError } = await supabaseAdmin()
       .from('match_players')
       .select(`
         *,
@@ -130,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     // Insert or update stats
     if (statsUpdates.length > 0) {
-      const { error: statsError } = await supabaseAdmin
+      const { error: statsError } = await supabaseAdmin()
         .from('stats')
         .upsert(statsUpdates, {
           onConflict: 'match_player_id',
@@ -169,7 +159,7 @@ export async function GET(request: NextRequest) {
 
     if (playerId) {
       // Get stats for a specific player - filter match_players first to avoid null records
-      const { data: playerStats, error: playerStatsError } = await supabaseAdmin
+      const { data: playerStats, error: playerStatsError } = await supabaseAdmin()
         .from('match_players')
         .select(`
           *,
@@ -306,7 +296,7 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // Get overall leaderboards
-      const { data: allStats, error: allStatsError } = await supabaseAdmin
+      const { data: allStats, error: allStatsError } = await supabaseAdmin()
         .from('stats')
         .select(`
           *,

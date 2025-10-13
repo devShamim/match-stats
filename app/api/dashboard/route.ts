@@ -1,15 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET() {
   try {
@@ -20,7 +10,7 @@ export async function GET() {
       statsResult
     ] = await Promise.all([
       // Get total players count (approved players)
-      supabaseAdmin
+      supabaseAdmin()
         .from('players')
         .select(`
           id,
@@ -29,13 +19,13 @@ export async function GET() {
         .eq('user_profile.status', 'approved'),
 
       // Get matches data
-      supabaseAdmin
+      supabaseAdmin()
         .from('matches')
         .select('*')
         .order('date', { ascending: false }),
 
       // Get all stats with player info
-      supabaseAdmin
+      supabaseAdmin()
         .from('stats')
         .select(`
           *,

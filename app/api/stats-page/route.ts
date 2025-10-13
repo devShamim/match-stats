@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
     // Get all stats with player information
-    const { data: allStats, error: allStatsError } = await supabaseAdmin
+    const { data: allStats, error: allStatsError } = await supabaseAdmin()
       .from('stats')
       .select(`
         *,
@@ -121,7 +111,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
 
     // Get recent matches (last 5 matches)
-    const { data: recentMatches, error: recentMatchesError } = await supabaseAdmin
+    const { data: recentMatches, error: recentMatchesError } = await supabaseAdmin()
       .from('matches')
       .select(`
         *,
