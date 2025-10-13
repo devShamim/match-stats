@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseClient'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -16,15 +15,8 @@ export async function GET(
       )
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Database connection not available' },
-        { status: 500 }
-      )
-    }
-
     // Fetch player data with user profile
-    const { data: player, error: playerError } = await supabaseAdmin
+    const { data: player, error: playerError } = await supabaseAdmin()
       .from('players')
       .select(`
         *,
@@ -79,15 +71,8 @@ export async function DELETE(
       )
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Database connection not available' },
-        { status: 500 }
-      )
-    }
-
     // First, get the player's user_id to delete from user_profiles
-    const { data: player, error: playerError } = await supabaseAdmin
+    const { data: player, error: playerError } = await supabaseAdmin()
       .from('players')
       .select('user_id')
       .eq('id', playerId)
@@ -112,7 +97,7 @@ export async function DELETE(
     // This ensures proper cascade deletion
 
     // 1. First get all match_player_ids for this player
-    const { data: matchPlayers, error: matchPlayersQueryError } = await supabaseAdmin
+    const { data: matchPlayers, error: matchPlayersQueryError } = await supabaseAdmin()
       .from('match_players')
       .select('id')
       .eq('player_id', playerId)
@@ -125,7 +110,7 @@ export async function DELETE(
     // 2. Delete stats records for this player
     if (matchPlayers && matchPlayers.length > 0) {
       const matchPlayerIds = matchPlayers.map(mp => mp.id)
-      const { error: statsError } = await supabaseAdmin
+      const { error: statsError } = await supabaseAdmin()
         .from('stats')
         .delete()
         .in('match_player_id', matchPlayerIds)
@@ -137,7 +122,7 @@ export async function DELETE(
     }
 
     // 3. Delete match_players records for this player
-    const { error: matchPlayersError } = await supabaseAdmin
+    const { error: matchPlayersError } = await supabaseAdmin()
       .from('match_players')
       .delete()
       .eq('player_id', playerId)
@@ -151,7 +136,7 @@ export async function DELETE(
     }
 
     // 4. Delete the player record
-    const { error: playerDeleteError } = await supabaseAdmin
+    const { error: playerDeleteError } = await supabaseAdmin()
       .from('players')
       .delete()
       .eq('id', playerId)
@@ -165,7 +150,7 @@ export async function DELETE(
     }
 
     // 5. Delete the user profile
-    const { error: userProfileError } = await supabaseAdmin
+    const { error: userProfileError } = await supabaseAdmin()
       .from('user_profiles')
       .delete()
       .eq('id', player.user_id)
@@ -180,25 +165,7 @@ export async function DELETE(
 
     // 6. Delete the auth user from Supabase Auth
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-      if (!supabaseUrl || !serviceRoleKey) {
-        console.error('Missing Supabase environment variables')
-        return NextResponse.json(
-          { error: 'Server configuration error' },
-          { status: 500 }
-        )
-      }
-
-      const supabaseAuth = createClient(supabaseUrl, serviceRoleKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-
-      const { error: authDeleteError } = await supabaseAuth.auth.admin.deleteUser(player.user_id)
+      const { error: authDeleteError } = await supabaseAdmin().auth.admin.deleteUser(player.user_id)
 
       if (authDeleteError) {
         console.error('Error deleting auth user:', authDeleteError)

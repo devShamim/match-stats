@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase configuration')
-}
-
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -30,7 +16,7 @@ export async function GET(
     }
 
     // Get match with teams and players
-    const { data: match, error: matchError } = await supabaseAdmin
+    const { data: match, error: matchError } = await supabaseAdmin()
       .from('matches')
       .select(`
         *,
@@ -56,7 +42,7 @@ export async function GET(
     }
 
     // Get match events
-    const { data: events, error: eventsError } = await supabaseAdmin
+    const { data: events, error: eventsError } = await supabaseAdmin()
       .from('match_events')
       .select('*')
       .eq('match_id', matchId)
@@ -85,7 +71,7 @@ export async function GET(
       ).map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
     } else {
       // Fallback: Get all players if match_players table doesn't exist
-      const { data: allPlayers, error: playersError } = await supabaseAdmin
+      const { data: allPlayers, error: playersError } = await supabaseAdmin()
         .from('players')
         .select(`
           *,
