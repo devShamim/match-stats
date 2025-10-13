@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First, create a Supabase Auth user
-    const { data: authData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: createUserError } = await supabaseAdmin().auth.admin.createUser({
       email: email.trim(),
       password: 'TempPassword123!', // Temporary password - user should change this
       email_confirm: true, // Auto-confirm the email
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Get the created user profile
     let profileData
-    const { data: fetchedProfileData, error: profileError } = await supabaseAdmin
+    const { data: fetchedProfileData, error: profileError } = await supabaseAdmin()
       .from('user_profiles')
       .select('*')
       .eq('id', authData.user.id)
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       // If profile wasn't created by trigger, create it manually
-      const { data: newProfileData, error: newProfileError } = await supabaseAdmin
+      const { data: newProfileData, error: newProfileError } = await supabaseAdmin()
         .from('user_profiles')
         .insert({
           id: authData.user.id,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Update the profile with additional data if needed
     if (profileData) {
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin()
         .from('user_profiles')
         .update({
           position: position || null,
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Then create a player record
-    const { data: playerData, error: playerError } = await supabaseAdmin
+    const { data: playerData, error: playerError } = await supabaseAdmin()
       .from('players')
       .insert({
         user_id: authData.user.id,

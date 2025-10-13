@@ -4,34 +4,42 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase configuration')
-}
+// Create supabaseAdmin only if both variables are available
+const supabaseAdmin = supabaseUrl && serviceRoleKey
+  ? createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null
 
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+// Helper function to check if supabaseAdmin is available
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    throw new Error('Missing Supabase configuration')
   }
-})
+  return supabaseAdmin
+}
 
 // Authentication helper function for admin routes
 export async function verifyAdminAuth(request: NextRequest) {
   try {
+    const admin = getSupabaseAdmin()
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return { error: 'Missing or invalid authorization header' }
     }
 
     const token = authHeader.substring(7)
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    const { data: { user }, error: authError } = await admin.auth.getUser(token)
 
     if (authError || !user) {
       return { error: 'Invalid token' }
     }
 
     // Check if user is admin
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile, error: profileError } = await admin
       .from('user_profiles')
       .select('role, status')
       .eq('id', user.id)
@@ -54,20 +62,21 @@ export async function verifyAdminAuth(request: NextRequest) {
 // Authentication helper function for any authenticated user
 export async function verifyUserAuth(request: NextRequest) {
   try {
+    const admin = getSupabaseAdmin()
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return { error: 'Missing or invalid authorization header' }
     }
 
     const token = authHeader.substring(7)
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    const { data: { user }, error: authError } = await admin.auth.getUser(token)
 
     if (authError || !user) {
       return { error: 'Invalid token' }
     }
 
     // Check if user profile exists and is approved
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile, error: profileError } = await admin
       .from('user_profiles')
       .select('role, status')
       .eq('id', user.id)
@@ -87,4 +96,4 @@ export async function verifyUserAuth(request: NextRequest) {
   }
 }
 
-export { supabaseAdmin }
+export { getSupabaseAdmin as supabaseAdmin }

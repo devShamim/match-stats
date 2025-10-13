@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update match record with scores
-    const { data: matchData, error: matchError } = await supabaseAdmin
+    const { data: matchData, error: matchError } = await supabaseAdmin()
       .from('matches')
       .update({
         score_teama: parseInt(score_teamA),

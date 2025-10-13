@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (authHeader) {
       try {
         const token = authHeader.replace('Bearer ', '')
-        const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
+        const { data: { user }, error: userError } = await supabaseAdmin().auth.getUser(token)
 
         if (userError) {
           console.log('Error getting user from token:', userError)
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const matchDateTime = new Date(`${date}T${time}`)
 
     // Create match record with proper user ID and team names
-    const { data: matchData, error: matchError } = await supabaseAdmin
+    const { data: matchData, error: matchError } = await supabaseAdmin()
       .from('matches')
       .insert({
         type,
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create teams
-    const { data: teamAData, error: teamAError } = await supabaseAdmin
+    const { data: teamAData, error: teamAError } = await supabaseAdmin()
       .from('teams')
       .insert({
         match_id: matchData.id,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: teamBData, error: teamBError } = await supabaseAdmin
+    const { data: teamBData, error: teamBError } = await supabaseAdmin()
       .from('teams')
       .insert({
         match_id: matchData.id,
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     // Insert match players if any are selected
     if (matchPlayerInserts.length > 0) {
-      const { data: matchPlayersData, error: matchPlayersError } = await supabaseAdmin
+      const { data: matchPlayersData, error: matchPlayersError } = await supabaseAdmin()
         .from('match_players')
         .insert(matchPlayerInserts)
         .select()

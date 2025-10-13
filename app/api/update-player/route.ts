@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
-    const { data: profileData, error: profileError } = await supabaseAdmin
+    const { data: profileData, error: profileError } = await supabaseAdmin()
       .from('user_profiles')
       .update({
         name: updates.name,
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update player record
-    const { data: playerData, error: playerError } = await supabaseAdmin
+    const { data: playerData, error: playerError } = await supabaseAdmin()
       .from('players')
       .update({
         jersey_number: updates.jersey_number,

@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest) {
     if (details.stats.fouls_teamB !== undefined) updateData.fouls_teamb = details.stats.fouls_teamB
     if (details.match_summary !== undefined) updateData.match_summary = details.match_summary
 
-    const { error: matchError } = await supabaseAdmin
+    const { error: matchError } = await supabaseAdmin()
       .from('matches')
       .update(updateData)
       .eq('id', matchId)
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Delete existing events for this match
-    const { error: deleteError } = await supabaseAdmin
+    const { error: deleteError } = await supabaseAdmin()
       .from('match_events')
       .delete()
       .eq('match_id', matchId)
@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest) {
 
     // Insert all events
     if (eventsToInsert.length > 0) {
-      const { error: eventsError } = await supabaseAdmin
+      const { error: eventsError } = await supabaseAdmin()
         .from('match_events')
         .insert(eventsToInsert)
 
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get updated match data
-    const { data: matchData, error: matchFetchError } = await supabaseAdmin
+    const { data: matchData, error: matchFetchError } = await supabaseAdmin()
       .from('matches')
       .select(`
         *,
