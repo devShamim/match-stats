@@ -19,7 +19,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
           .from('user_profiles')
           .insert({
             id: userId,
-            email: '', // Will be updated by the user
+            email: '', // Will be updated by the users
             name: 'New User',
             role: 'player',
             status: 'pending'
