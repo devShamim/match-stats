@@ -84,8 +84,8 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
     clean_sheet_teamA: false,
     clean_sheet_teamB: false,
     match_summary: '',
-    teamAName: 'Team A',
-    teamBName: 'Team B',
+    teamAName: (match as any)?.teamA_name || 'Team A',
+    teamBName: (match as any)?.teamB_name || 'Team B',
     teamAPlayers: [],
     teamBPlayers: []
   })
@@ -114,8 +114,9 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
             substitutions: data.details.substitutions || [],
             stats: data.details.stats || prev.stats,
             match_summary: data.details.match_summary || '',
-            teamAName: data.details.teamAName || 'Team A',
-            teamBName: data.details.teamBName || 'Team B',
+            // Use actual team names from match data or fallback to match properties
+            teamAName: data.details.teamAName || (match as any).teamA_name || 'Team A',
+            teamBName: data.details.teamBName || (match as any).teamB_name || 'Team B',
             teamAPlayers: data.details.teamAPlayers || [],
             teamBPlayers: data.details.teamBPlayers || []
           }))
@@ -275,7 +276,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                         </div>
                       </div>
                       <Badge className={goal.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}>
-                        Team {goal.team}
+                        {goal.team === 'A' ? details.teamAName : details.teamBName}
                       </Badge>
                     </div>
                   ))}
@@ -312,7 +313,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                           {card.type.toUpperCase()}
                         </Badge>
                         <Badge className={card.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}>
-                          Team {card.team}
+                          {card.team === 'A' ? details.teamAName : details.teamBName}
                         </Badge>
                       </div>
                     </div>
@@ -354,7 +355,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                         </div>
                       </div>
                       <Badge className={sub.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}>
-                        Team {sub.team}
+                        {sub.team === 'A' ? details.teamAName : details.teamBName}
                       </Badge>
                     </div>
                   ))}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown } from 'lucide-react'
+import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown, Clock, MapPin, Zap, Star } from 'lucide-react'
 import Link from 'next/link'
 import MatchDetailsView from '@/components/MatchDetailsView'
 
@@ -35,6 +35,7 @@ interface StatsData {
     most_cards: PlayerStats[]
   }
   recent_matches: any[]
+  upcoming_matches: any[]
 }
 
 export default function PublicStatsView() {
@@ -78,6 +79,35 @@ export default function PublicStatsView() {
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
+  const formatUpcomingDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = date.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) {
+      return 'Today'
+    } else if (diffDays === 1) {
+      return 'Tomorrow'
+    } else if (diffDays <= 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' })
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      })
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -189,6 +219,94 @@ export default function PublicStatsView() {
             </Link>
           </div>
         </div>
+
+        {/* Upcoming Match Banner */}
+        {stats.upcoming_matches && stats.upcoming_matches.length > 0 && (
+          <div className="mb-12">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 shadow-2xl">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 bg-black/10">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12"></div>
+              </div>
+
+              {/* Content */}
+              <div className="relative px-8 py-12">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-4">
+                      <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mr-4">
+                        <Zap className="h-5 w-5 text-yellow-300 mr-2" />
+                        <span className="text-white font-semibold">NEXT MATCH</span>
+                      </div>
+                      <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                        <Star className="h-4 w-4 text-yellow-300 mr-2" />
+                        <span className="text-white font-medium">{stats.upcoming_matches[0].type === 'internal' ? 'Internal Match' : 'External Match'}</span>
+                      </div>
+                    </div>
+
+                    <h2 className="text-4xl font-bold text-white mb-4">
+                      {stats.upcoming_matches[0].teamA_name || 'Team A'} vs {stats.upcoming_matches[0].teamB_name || 'Team B'}
+                    </h2>
+
+                    <div className="flex items-center space-x-8 mb-6">
+                      <div className="flex items-center">
+                        <Calendar className="h-6 w-6 text-white/80 mr-3" />
+                        <div>
+                          <p className="text-white/80 text-sm">Date</p>
+                          <p className="text-white font-semibold">{formatUpcomingDate(stats.upcoming_matches[0].date)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <Clock className="h-6 w-6 text-white/80 mr-3" />
+                        <div>
+                          <p className="text-white/80 text-sm">Time</p>
+                          <p className="text-white font-semibold">{formatTime(stats.upcoming_matches[0].date)}</p>
+                        </div>
+                      </div>
+
+                      {stats.upcoming_matches[0].location && (
+                        <div className="flex items-center">
+                          <MapPin className="h-6 w-6 text-white/80 mr-3" />
+                          <div>
+                            <p className="text-white/80 text-sm">Location</p>
+                            <p className="text-white font-semibold">{stats.upcoming_matches[0].location}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {stats.upcoming_matches[0].opponent && (
+                      <div className="flex items-center">
+                        <Users className="h-5 w-5 text-white/80 mr-2" />
+                        <span className="text-white/90">vs {stats.upcoming_matches[0].opponent}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center">
+                      <p className="text-white/80 text-sm mb-2">Countdown</p>
+                      <div className="text-3xl font-bold text-white mb-2">
+                        {(() => {
+                          const matchDate = new Date(stats.upcoming_matches[0].date)
+                          const now = new Date()
+                          const diffTime = matchDate.getTime() - now.getTime()
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+                          if (diffDays === 0) return 'TODAY'
+                          if (diffDays === 1) return 'TOMORROW'
+                          return `${diffDays} DAYS`
+                        })()}
+                      </div>
+                      <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full mx-auto"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

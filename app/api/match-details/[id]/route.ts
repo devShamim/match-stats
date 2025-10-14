@@ -60,15 +60,25 @@ export async function GET(
     // Get team players - with fallback if match_players table doesn't exist
     let teamAPlayers: string[] = []
     let teamBPlayers: string[] = []
+    let teamAPlayerIds: string[] = []
+    let teamBPlayerIds: string[] = []
 
     if (match.match_players && match.match_players.length > 0) {
-      teamAPlayers = match.match_players.filter((mp: any) =>
-        mp.team?.name === match.teamA_name || mp.team?.name === 'Team A'
-      ).map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
+      // Get teams ordered by creation time (first team = Team A, second team = Team B)
+      const teams = match.teams?.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) || []
 
-      teamBPlayers = match.match_players.filter((mp: any) =>
-        mp.team?.name === match.teamB_name || mp.team?.name === 'Team B'
-      ).map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
+      if (teams.length >= 2) {
+        const teamAId = teams[0].id
+        const teamBId = teams[1].id
+
+        const teamAPlayersData = match.match_players.filter((mp: any) => mp.team_id === teamAId)
+        teamAPlayers = teamAPlayersData.map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
+        teamAPlayerIds = teamAPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
+
+        const teamBPlayersData = match.match_players.filter((mp: any) => mp.team_id === teamBId)
+        teamBPlayers = teamBPlayersData.map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
+        teamBPlayerIds = teamBPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
+      }
     } else {
       // Fallback: Get all players if match_players table doesn't exist
       const { data: allPlayers, error: playersError } = await supabaseAdmin()
@@ -80,8 +90,11 @@ export async function GET(
 
       if (!playersError && allPlayers) {
         const playerNames = allPlayers.map(p => p.user_profile?.name).filter(Boolean)
+        const playerIds = allPlayers.map(p => p.id).filter(Boolean)
         teamAPlayers = playerNames
         teamBPlayers = playerNames
+        teamAPlayerIds = playerIds
+        teamBPlayerIds = playerIds
       }
     }
 
@@ -120,6 +133,8 @@ export async function GET(
       match_summary: match.match_summary || '',
       teamAPlayers,
       teamBPlayers,
+      teamAPlayerIds,
+      teamBPlayerIds,
       teamAName: match.teamA_name || 'Team A',
       teamBName: match.teamB_name || 'Team B'
     }

@@ -3,25 +3,23 @@ import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get all stats with player information
-    const { data: allStats, error: allStatsError } = await supabaseAdmin()
-      .from('stats')
+    // Get all match_players with stats and player information
+    const { data: allMatchPlayers, error: allMatchPlayersError } = await supabaseAdmin()
+      .from('match_players')
       .select(`
         *,
-        match_player:match_players(
+        match:matches(*),
+        player:players(
           *,
-          match:matches(*),
-          player:players(
-            *,
-            user_profile:user_profiles(*)
-          )
-        )
+          user_profile:user_profiles(*)
+        ),
+        stats(*)
       `)
 
-    if (allStatsError) {
-      console.error('Error fetching all stats:', allStatsError)
+    if (allMatchPlayersError) {
+      console.error('Error fetching match players:', allMatchPlayersError)
       return NextResponse.json(
-        { error: `Failed to fetch stats: ${allStatsError.message}` },
+        { error: `Failed to fetch match players: ${allMatchPlayersError.message}` },
         { status: 400 }
       )
     }
@@ -29,10 +27,10 @@ export async function GET(request: NextRequest) {
     // Aggregate stats by player
     const playerStatsMap = new Map()
 
-    allStats.forEach(stat => {
-      const playerId = stat.match_player.player_id
-      const playerName = stat.match_player.player?.user_profile?.name
-      const playerPhoto = stat.match_player.player?.user_profile?.photo_url
+    allMatchPlayers.forEach(matchPlayer => {
+      const playerId = matchPlayer.player_id
+      const playerName = matchPlayer.player?.user_profile?.name
+      const playerPhoto = matchPlayer.player?.user_profile?.photo_url
 
       if (!playerStatsMap.has(playerId)) {
         playerStatsMap.set(playerId, {
@@ -45,31 +43,63 @@ export async function GET(request: NextRequest) {
           total_red_cards: 0,
           total_minutes: 0,
           matches_played: 0,
-          recent_matches: []
+          recent_matches: [],
+          unique_matches: new Set() // Track unique matches
         })
       }
 
       const playerStats = playerStatsMap.get(playerId)
-      playerStats.total_goals += stat.goals
-      playerStats.total_assists += stat.assists
-      playerStats.total_yellow_cards += stat.yellow_cards
-      playerStats.total_red_cards += stat.red_cards
-      playerStats.total_minutes += stat.minutes_played
-      playerStats.matches_played += 1
 
-      // Add to recent matches (we'll limit this later)
-      playerStats.recent_matches.push({
-        match_id: stat.match_player.match.id,
-        date: stat.match_player.match.date,
-        opponent: stat.match_player.match.opponent,
-        teamA_name: stat.match_player.match.teamA_name,
-        teamB_name: stat.match_player.match.teamB_name,
-        goals: stat.goals,
-        assists: stat.assists,
-        yellow_cards: stat.yellow_cards,
-        red_cards: stat.red_cards,
-        minutes_played: stat.minutes_played
-      })
+      // Add unique match to set (this ensures we count all matches, not just those with stats)
+      playerStats.unique_matches.add(matchPlayer.match.id)
+
+      // Get stats for this match_player (stats is an object, not array)
+      const stats = matchPlayer.stats || null
+
+      if (stats) {
+        playerStats.total_goals += stats.goals || 0
+        playerStats.total_assists += stats.assists || 0
+        playerStats.total_yellow_cards += stats.yellow_cards || 0
+        playerStats.total_red_cards += stats.red_cards || 0
+        playerStats.total_minutes += stats.minutes_played || 90
+
+        // Add to recent matches
+        playerStats.recent_matches.push({
+          match_id: matchPlayer.match.id,
+          date: matchPlayer.match.date,
+          opponent: matchPlayer.match.opponent,
+          teamA_name: matchPlayer.match.teamA_name,
+          teamB_name: matchPlayer.match.teamB_name,
+          goals: stats.goals || 0,
+          assists: stats.assists || 0,
+          yellow_cards: stats.yellow_cards || 0,
+          red_cards: stats.red_cards || 0,
+          minutes_played: stats.minutes_played || 90
+        })
+      } else {
+        // If no stats record exists, assume 90 minutes played
+        playerStats.total_minutes += 90
+
+        // Add to recent matches with default values
+        playerStats.recent_matches.push({
+          match_id: matchPlayer.match.id,
+          date: matchPlayer.match.date,
+          opponent: matchPlayer.match.opponent,
+          teamA_name: matchPlayer.match.teamA_name,
+          teamB_name: matchPlayer.match.teamB_name,
+          goals: 0,
+          assists: 0,
+          yellow_cards: 0,
+          red_cards: 0,
+          minutes_played: 90
+        })
+      }
+    })
+
+    // Convert unique matches set to count
+    playerStatsMap.forEach(playerStats => {
+      playerStats.matches_played = playerStats.unique_matches.size
+      delete playerStats.unique_matches // Clean up
     })
 
     // Convert to arrays and sort
@@ -124,11 +154,37 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching recent matches:', recentMatchesError)
     }
 
+    // Get upcoming matches (next 3 matches)
+    // Use a more flexible date comparison - get matches from 1 hour ago to avoid timezone issues
+    const oneHourAgo = new Date()
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1)
+
+    const { data: upcomingMatches, error: upcomingMatchesError } = await supabaseAdmin()
+      .from('matches')
+      .select(`
+        *,
+        teams(*)
+      `)
+      .eq('status', 'scheduled')
+      .gte('date', oneHourAgo.toISOString())
+      .order('date', { ascending: true })
+      .limit(3)
+
+    if (upcomingMatchesError) {
+      console.error('Error fetching upcoming matches:', upcomingMatchesError)
+    }
+
     // Calculate overall statistics
     const totalGoals = allPlayerStats.reduce((sum, player) => sum + player.total_goals, 0)
     const totalAssists = allPlayerStats.reduce((sum, player) => sum + player.total_assists, 0)
     const totalMatches = recentMatches?.length || 0
-    const totalPlayers = allPlayerStats.length
+
+    // Get total registered players count (not just players with stats)
+    const { data: allPlayers, error: playersError } = await supabaseAdmin()
+      .from('players')
+      .select('id')
+
+    const totalPlayers = allPlayers?.length || 0
 
     return NextResponse.json({
       success: true,
@@ -146,7 +202,8 @@ export async function GET(request: NextRequest) {
           most_active: mostActivePlayers,
           most_cards: mostCards
         },
-        recent_matches: recentMatches || []
+        recent_matches: recentMatches || [],
+        upcoming_matches: upcomingMatches || []
       }
     }, {
       headers: {

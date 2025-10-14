@@ -11,7 +11,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { Match } from '@/types'
 import {
   X, Save, Plus, Minus, Clock, Trophy, Users, Target,
-  Zap, AlertTriangle, UserCheck, UserX, Shield
+  Zap, AlertTriangle, UserCheck, UserX, Shield, Settings,
+  Calendar, MapPin, Edit3
 } from 'lucide-react'
 
 interface MatchDetailsModalProps {
@@ -72,7 +73,29 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const { showToast } = useToast()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'stats'>('goals')
+  const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'stats' | 'others'>('goals')
+
+  // State for match info form
+  const [matchInfo, setMatchInfo] = useState({
+    date: '',
+    time: '',
+    location: '',
+    opponent: '',
+    type: 'internal',
+    status: 'scheduled',
+    score_teamA: 0,
+    score_teamB: 0,
+    teamA_name: '',
+    teamB_name: '',
+    match_summary: ''
+  })
+
+  // State for team players
+  const [allPlayers, setAllPlayers] = useState<any[]>([])
+  const [selectedTeamAPlayers, setSelectedTeamAPlayers] = useState<string[]>([])
+  const [selectedTeamBPlayers, setSelectedTeamBPlayers] = useState<string[]>([])
+  const [savingMatchInfo, setSavingMatchInfo] = useState(false)
+  const [savingTeamPlayers, setSavingTeamPlayers] = useState(false)
 
   const [details, setDetails] = useState<MatchDetails>({
     goals: [],
@@ -106,6 +129,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     if (!match) return
 
     try {
+      // Load match details
       const response = await fetch(`/api/match-details/${match.id}?t=${Date.now()}`)
       if (response.ok) {
         const data = await response.json()
@@ -125,6 +149,42 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
             teamAName: data.details.teamAName || 'Team A',
             teamBName: data.details.teamBName || 'Team B'
           }))
+        }
+      }
+
+      // Load match info for the form
+      const matchDate = new Date(match.date)
+      setMatchInfo({
+        date: matchDate.toISOString().split('T')[0],
+        time: matchDate.toTimeString().split(' ')[0].substring(0, 5),
+        location: match.location || '',
+        opponent: match.opponent || '',
+        type: match.type || 'internal',
+        status: match.status || 'scheduled',
+        score_teamA: (match as any).score_teama || 0,
+        score_teamB: (match as any).score_teamb || 0,
+        teamA_name: (match as any).teamA_name || '',
+        teamB_name: (match as any).teamB_name || '',
+        match_summary: (match as any).match_summary || ''
+      })
+
+      // Load all players
+      const playersResponse = await fetch('/api/players')
+      if (playersResponse.ok) {
+        const playersData = await playersResponse.json()
+        if (playersData.success) {
+          setAllPlayers(playersData.players)
+        }
+      }
+
+      // Load current team players
+      const teamPlayersResponse = await fetch(`/api/match-details/${match.id}`)
+      if (teamPlayersResponse.ok) {
+        const teamPlayersData = await teamPlayersResponse.json()
+        if (teamPlayersData.success && teamPlayersData.details) {
+          // Use player IDs for checkboxes, not player names
+          setSelectedTeamAPlayers(teamPlayersData.details.teamAPlayerIds || [])
+          setSelectedTeamBPlayers(teamPlayersData.details.teamBPlayerIds || [])
         }
       }
     } catch (error) {
@@ -245,6 +305,91 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     }
   }
 
+  const handleSaveMatchInfo = async () => {
+    if (!match) return
+
+    setSavingMatchInfo(true)
+    try {
+      // Get the current session to include auth token
+      const { data: { session } } = await supabase.auth.getSession()
+
+      // Combine date and time
+      const dateTime = new Date(`${matchInfo.date}T${matchInfo.time}`)
+
+      const response = await fetch('/api/update-match-info', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+        },
+        body: JSON.stringify({
+          matchId: match.id,
+          date: dateTime.toISOString(),
+          location: matchInfo.location,
+          opponent: matchInfo.opponent,
+          type: matchInfo.type,
+          status: matchInfo.status,
+          score_teamA: matchInfo.score_teamA,
+          score_teamB: matchInfo.score_teamB,
+          teamA_name: matchInfo.teamA_name,
+          teamB_name: matchInfo.teamB_name,
+          match_summary: matchInfo.match_summary
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update match info')
+      }
+
+      showToast('Match information updated successfully!', 'success')
+      onSave(result.match)
+    } catch (err: any) {
+      console.error('Error saving match info:', err)
+      showToast(err.message || 'Failed to update match information', 'error')
+    } finally {
+      setSavingMatchInfo(false)
+    }
+  }
+
+  const handleSaveTeamPlayers = async () => {
+    if (!match) return
+
+    setSavingTeamPlayers(true)
+    try {
+      // Get the current session to include auth token
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const response = await fetch('/api/update-team-players', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+        },
+        body: JSON.stringify({
+          matchId: match.id,
+          teamA_players: selectedTeamAPlayers,
+          teamB_players: selectedTeamBPlayers
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update team players')
+      }
+
+      showToast('Team players updated successfully!', 'success')
+      onSave(result.match)
+    } catch (err: any) {
+      console.error('Error saving team players:', err)
+      showToast(err.message || 'Failed to update team players', 'error')
+    } finally {
+      setSavingTeamPlayers(false)
+    }
+  }
+
   if (!isOpen || !match) return null
 
   return (
@@ -279,7 +424,8 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
               { id: 'goals', label: 'Goals', icon: Target },
               { id: 'cards', label: 'Cards', icon: AlertTriangle },
               { id: 'subs', label: 'Substitutions', icon: Users },
-              { id: 'stats', label: 'Statistics', icon: Zap }
+              { id: 'stats', label: 'Statistics', icon: Zap },
+              { id: 'others', label: 'Others', icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -707,6 +853,249 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                   placeholder="Write a brief summary of the match..."
                   className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
+              </Card>
+            </div>
+          )}
+
+          {/* Others Tab */}
+          {activeTab === 'others' && (
+            <div className="space-y-6">
+              {/* Match Information */}
+              <Card className="p-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Edit3 className="h-5 w-5 mr-2" />
+                    Match Information
+                  </CardTitle>
+                  <CardDescription>
+                    Update basic match details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={matchInfo.date}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Time
+                      </label>
+                      <Input
+                        type="time"
+                        value={matchInfo.time}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, time: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Location
+                      </label>
+                      <Input
+                        type="text"
+                        value={matchInfo.location}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, location: e.target.value }))}
+                        placeholder="Match location"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Opponent
+                      </label>
+                      <Input
+                        type="text"
+                        value={matchInfo.opponent}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, opponent: e.target.value }))}
+                        placeholder="Opponent team name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Match Type
+                      </label>
+                      <select
+                        value={matchInfo.type}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, type: e.target.value }))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="internal">Internal</option>
+                        <option value="external">External</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={matchInfo.status}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, status: e.target.value }))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="scheduled">Scheduled</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Team A Score
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={matchInfo.score_teamA}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, score_teamA: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Team B Score
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={matchInfo.score_teamB}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, score_teamB: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Team A Name
+                      </label>
+                      <Input
+                        type="text"
+                        value={matchInfo.teamA_name}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, teamA_name: e.target.value }))}
+                        placeholder="Team A name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Team B Name
+                      </label>
+                      <Input
+                        type="text"
+                        value={matchInfo.teamB_name}
+                        onChange={(e) => setMatchInfo(prev => ({ ...prev, teamB_name: e.target.value }))}
+                        placeholder="Team B name"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Match Summary
+                    </label>
+                    <textarea
+                      value={matchInfo.match_summary}
+                      onChange={(e) => setMatchInfo(prev => ({ ...prev, match_summary: e.target.value }))}
+                      placeholder="Write a brief summary of the match..."
+                      className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSaveMatchInfo}
+                      disabled={savingMatchInfo}
+                      className="min-w-[120px]"
+                    >
+                      {savingMatchInfo ? (
+                        'Saving...'
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Info
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Team Players */}
+              <Card className="p-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Team Players
+                  </CardTitle>
+                  <CardDescription>
+                    Assign players to teams
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Team A Players */}
+                    <div>
+                      <h4 className="font-medium mb-3">{matchInfo.teamA_name || 'Team A'}</h4>
+                      <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                        {allPlayers.map(player => (
+                          <label key={player.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedTeamAPlayers.includes(player.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTeamAPlayers(prev => [...prev, player.id])
+                                } else {
+                                  setSelectedTeamAPlayers(prev => prev.filter(id => id !== player.id))
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <span className="text-sm">{player.user_profile?.name || 'Unknown Player'}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Team B Players */}
+                    <div>
+                      <h4 className="font-medium mb-3">{matchInfo.teamB_name || 'Team B'}</h4>
+                      <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                        {allPlayers.map(player => (
+                          <label key={player.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedTeamBPlayers.includes(player.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTeamBPlayers(prev => [...prev, player.id])
+                                } else {
+                                  setSelectedTeamBPlayers(prev => prev.filter(id => id !== player.id))
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <span className="text-sm">{player.user_profile?.name || 'Unknown Player'}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSaveTeamPlayers}
+                      disabled={savingTeamPlayers}
+                      className="min-w-[120px]"
+                    >
+                      {savingTeamPlayers ? (
+                        'Saving...'
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Players
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
             </div>
           )}

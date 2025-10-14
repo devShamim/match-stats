@@ -247,7 +247,8 @@ export async function GET(request: NextRequest) {
           aggregatedStats.total_assists += stats.assists || 0
           aggregatedStats.total_yellow_cards += stats.yellow_cards || 0
           aggregatedStats.total_red_cards += stats.red_cards || 0
-          aggregatedStats.total_minutes += stats.minutes_played || 0
+          // Use 90 minutes per match if minutes_played is 0 or not set
+          aggregatedStats.total_minutes += stats.minutes_played || 90
 
           // Add to recent matches
           if (matchPlayer.match) {
@@ -261,7 +262,26 @@ export async function GET(request: NextRequest) {
               assists: stats.assists,
               yellow_cards: stats.yellow_cards,
               red_cards: stats.red_cards,
-              minutes_played: stats.minutes_played
+              minutes_played: stats.minutes_played || 90
+            })
+          }
+        } else {
+          // If no stats record exists, assume 90 minutes played
+          aggregatedStats.total_minutes += 90
+
+          // Add to recent matches with default values
+          if (matchPlayer.match) {
+            aggregatedStats.recent_matches.push({
+              match_id: matchPlayer.match.id,
+              date: matchPlayer.match.date,
+              opponent: matchPlayer.match.opponent,
+              teamA_name: matchPlayer.match.teamA_name,
+              teamB_name: matchPlayer.match.teamB_name,
+              goals: 0,
+              assists: 0,
+              yellow_cards: 0,
+              red_cards: 0,
+              minutes_played: 90
             })
           }
         }

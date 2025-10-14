@@ -3,39 +3,37 @@ import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET() {
   try {
-    // Get all stats with player and match information
-    const { data: stats, error: statsError } = await supabaseAdmin()
-      .from('stats')
+    // Get all match_players with stats and player information
+    const { data: allMatchPlayers, error: allMatchPlayersError } = await supabaseAdmin()
+      .from('match_players')
       .select(`
         *,
-        match_player:match_players(
+        match:matches(*),
+        player:players(
           *,
-          player:players(
-            *,
-            user_profile:user_profiles(*)
-          ),
-          match:matches(*)
-        )
+          user_profile:user_profiles(*)
+        ),
+        stats(*)
       `)
 
-    if (statsError) {
-      console.error('Error fetching stats:', statsError)
-      return NextResponse.json({ error: 'Failed to fetch stats data' }, { status: 500 })
+    if (allMatchPlayersError) {
+      console.error('Error fetching match players:', allMatchPlayersError)
+      return NextResponse.json({ error: 'Failed to fetch match players data' }, { status: 500 })
     }
 
     // Aggregate player statistics
     const playerStatsMap = new Map()
 
-    stats?.forEach(stat => {
-      if (stat.match_player?.player?.user_profile?.name) {
-        const playerName = stat.match_player.player.user_profile.name
-        const playerId = stat.match_player.player.id
+    allMatchPlayers?.forEach(matchPlayer => {
+      if (matchPlayer.player?.user_profile?.name) {
+        const playerName = matchPlayer.player.user_profile.name
+        const playerId = matchPlayer.player.id
 
         if (!playerStatsMap.has(playerId)) {
           playerStatsMap.set(playerId, {
             id: playerId,
             name: playerName,
-            photo_url: stat.match_player.player.user_profile.photo_url,
+            photo_url: matchPlayer.player.user_profile.photo_url,
             goals: 0,
             assists: 0,
             yellow_cards: 0,
@@ -43,18 +41,36 @@ export async function GET() {
             matches_played: 0,
             total_minutes: 0,
             goals_per_match: 0,
-            assists_per_match: 0
+            assists_per_match: 0,
+            unique_matches: new Set() // Track unique matches
           })
         }
 
         const playerStats = playerStatsMap.get(playerId)
-        playerStats.goals += stat.goals || 0
-        playerStats.assists += stat.assists || 0
-        playerStats.yellow_cards += stat.yellow_cards || 0
-        playerStats.red_cards += stat.red_cards || 0
-        playerStats.total_minutes += stat.minutes_played || 0
-        playerStats.matches_played += 1
+
+        // Add unique match to set (this ensures we count all matches, not just those with stats)
+        playerStats.unique_matches.add(matchPlayer.match.id)
+
+        // Get stats for this match_player (stats is an object, not array)
+        const stats = matchPlayer.stats || null
+
+        if (stats) {
+          playerStats.goals += stats.goals || 0
+          playerStats.assists += stats.assists || 0
+          playerStats.yellow_cards += stats.yellow_cards || 0
+          playerStats.red_cards += stats.red_cards || 0
+          playerStats.total_minutes += stats.minutes_played || 90
+        } else {
+          // If no stats record exists, assume 90 minutes played
+          playerStats.total_minutes += 90
+        }
       }
+    })
+
+    // Convert unique matches set to count
+    playerStatsMap.forEach(playerStats => {
+      playerStats.matches_played = playerStats.unique_matches.size
+      delete playerStats.unique_matches // Clean up
     })
 
     // Calculate per-match ratios
