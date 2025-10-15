@@ -91,7 +91,7 @@ export default function PlayersPage() {
         },
         (payload) => {
           console.log('User profiles table change detected:', payload)
-          fetchPlayers() // Refresh data automatically
+          fetchPlayers() // Refresh data automatically (This is needed to update the player's name and email in the players list)
         }
       )
       .subscribe()
