@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown, Clock, MapPin, Zap, Star } from 'lucide-react'
+import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown, Clock, MapPin, Zap, Star, Shield, Save } from 'lucide-react'
 import Link from 'next/link'
 import MatchDetailsView from '@/components/MatchDetailsView'
 
@@ -16,6 +16,8 @@ interface PlayerStats {
   total_assists: number
   total_yellow_cards: number
   total_red_cards: number
+  total_clean_sheets: number
+  total_saves: number
   total_minutes: number
   matches_played: number
 }
@@ -33,6 +35,8 @@ interface StatsData {
     top_performers: PlayerStats[]
     most_active: PlayerStats[]
     most_cards: PlayerStats[]
+    top_clean_sheets: PlayerStats[]
+    top_saves: PlayerStats[]
   }
   recent_matches: any[]
   upcoming_matches: any[]
@@ -545,6 +549,121 @@ export default function PublicStatsView() {
                 )}
             </CardContent>
           </Card>
+          </div>
+
+          {/* Additional Leaderboards Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Top Clean Sheets */}
+            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center text-lg">
+                  <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg mr-3">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                  Top Clean Sheets
+                </CardTitle>
+                <CardDescription className="text-sm">Defenders and goalkeepers with most clean sheets</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {stats.leaderboards.top_clean_sheets.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.leaderboards.top_clean_sheets.map((player, index) => (
+                      <div key={player.player_id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors duration-200 rounded-lg">
+                        <div className="flex items-center">
+                          {index < 5 ? (
+                            <div className={`flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs mr-3 shadow-lg ${
+                              index === 0 ? 'bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-500 text-yellow-800 border-2 border-yellow-400 ring-2 ring-yellow-200' :
+                              index === 1 ? 'bg-gradient-to-br from-gray-200 via-gray-300 to-gray-500 text-gray-800 border-2 border-gray-400 ring-2 ring-gray-200' :
+                              index === 2 ? 'bg-gradient-to-br from-orange-200 via-orange-300 to-orange-500 text-orange-800 border-2 border-orange-400 ring-2 ring-orange-200' :
+                              'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-300 text-gray-600 border-2 border-gray-200 ring-2 ring-gray-50'
+                            }`}>
+                              {index + 1}
+                            </div>
+                          ) : (
+                            <span className="text-sm font-medium text-gray-500 mr-3 w-6 text-center">
+                              {index + 1}.
+                            </span>
+                          )}
+                          <div>
+                            <Link href={`/player/${player.player_id}`} className="hover:text-blue-600 transition-colors">
+                              <p className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer">{player.player_name}</p>
+                            </Link>
+                            <p className="text-xs text-gray-500">{player.matches_played} matches</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold text-gray-900">{player.total_clean_sheets}</p>
+                          <p className="text-xs text-gray-500">clean sheets</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Shield className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">No clean sheets recorded yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Saves */}
+            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center text-lg">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg mr-3">
+                    <Save className="h-5 w-5 text-white" />
+                  </div>
+                  Top Saves
+                </CardTitle>
+                <CardDescription className="text-sm">Goalkeepers with the most saves</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {stats.leaderboards.top_saves.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.leaderboards.top_saves.map((player, index) => (
+                      <div key={player.player_id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors duration-200 rounded-lg">
+                        <div className="flex items-center">
+                          {index < 5 ? (
+                            <div className={`flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs mr-3 shadow-lg ${
+                              index === 0 ? 'bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-500 text-yellow-800 border-2 border-yellow-400 ring-2 ring-yellow-200' :
+                              index === 1 ? 'bg-gradient-to-br from-gray-200 via-gray-300 to-gray-500 text-gray-800 border-2 border-gray-400 ring-2 ring-gray-200' :
+                              index === 2 ? 'bg-gradient-to-br from-orange-200 via-orange-300 to-orange-500 text-orange-800 border-2 border-orange-400 ring-2 ring-orange-200' :
+                              'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-300 text-gray-600 border-2 border-gray-200 ring-2 ring-gray-50'
+                            }`}>
+                              {index + 1}
+                            </div>
+                          ) : (
+                            <span className="text-sm font-medium text-gray-500 mr-3 w-6 text-center">
+                              {index + 1}.
+                            </span>
+                          )}
+                          <div>
+                            <Link href={`/player/${player.player_id}`} className="hover:text-blue-600 transition-colors">
+                              <p className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer">{player.player_name}</p>
+                            </Link>
+                            <p className="text-xs text-gray-500">{player.matches_played} matches</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold text-gray-900">{player.total_saves}</p>
+                          <p className="text-xs text-gray-500">saves</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Save className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">No saves recorded yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 

@@ -56,6 +56,8 @@ export async function GET(
     const goals = events?.filter(e => e.event_type === 'goal') || []
     const cards = events?.filter(e => e.event_type === 'card') || []
     const substitutions = events?.filter(e => e.event_type === 'substitution') || []
+    const saves = events?.filter(e => e.event_type === 'save') || []
+    const cleanSheets = events?.filter(e => e.event_type === 'clean_sheet') || []
 
     // Get team players - with fallback if match_players table doesn't exist
     let teamAPlayers: string[] = []
@@ -98,6 +100,7 @@ export async function GET(
       }
     }
 
+
     const details = {
       goals: goals.map(goal => ({
         id: goal.id,
@@ -119,6 +122,17 @@ export async function GET(
         playerOut: sub.player_out,
         playerIn: sub.player_in,
         team: sub.team
+      })),
+      saves: saves.map(save => ({
+        id: save.id,
+        minute: save.minute,
+        player: save.player,
+        team: save.team
+      })),
+      clean_sheets: cleanSheets.map(cleanSheet => ({
+        id: cleanSheet.id,
+        player: cleanSheet.player,
+        team: cleanSheet.team
       })),
       stats: {
         possession_teamA: match.possession_teama || 50,

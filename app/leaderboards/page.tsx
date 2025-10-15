@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import PlayerAvatar from '@/components/PlayerAvatar'
-import { Trophy, Target, Users, Award, Clock, TrendingUp } from 'lucide-react'
+import { Trophy, Target, Users, Award, Clock, TrendingUp, Shield, Save } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
@@ -14,6 +14,8 @@ interface PlayerStats {
   assists: number
   yellow_cards: number
   red_cards: number
+  clean_sheets: number
+  saves: number
   matches_played: number
   total_minutes: number
   goals_per_match: number
@@ -27,6 +29,8 @@ interface LeaderboardsData {
   goalsPerMatch: PlayerStats[]
   topPerformers: PlayerStats[]
   mostMinutesPlayed: PlayerStats[]
+  topCleanSheets: PlayerStats[]
+  topSaves: PlayerStats[]
 }
 
 export default function LeaderboardsPage() {
@@ -198,6 +202,24 @@ export default function LeaderboardsPage() {
             <Clock className="h-5 w-5 mr-2" />,
             (player) => player.total_minutes,
             (player) => `${player.total_minutes} minutes`
+          )}
+
+          {/* Top Clean Sheets */}
+          {renderLeaderboard(
+            data.topCleanSheets,
+            'Top Clean Sheets',
+            <Shield className="h-5 w-5 mr-2" />,
+            (player) => player.clean_sheets,
+            (player) => `${player.clean_sheets} clean sheet${player.clean_sheets !== 1 ? 's' : ''}`
+          )}
+
+          {/* Top Saves */}
+          {renderLeaderboard(
+            data.topSaves,
+            'Top Saves',
+            <Save className="h-5 w-5 mr-2" />,
+            (player) => player.saves,
+            (player) => `${player.saves} save${player.saves !== 1 ? 's' : ''}`
           )}
         </div>
       )}

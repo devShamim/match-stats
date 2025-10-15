@@ -6,13 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import PlayerAvatar from '@/components/PlayerAvatar'
-import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown } from 'lucide-react'
+import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save } from 'lucide-react'
 
 interface PlayerStats {
   total_goals: number
   total_assists: number
   total_yellow_cards: number
   total_red_cards: number
+  total_clean_sheets: number
+  total_saves: number
   total_minutes: number
   matches_played: number
   recent_matches: Array<{
@@ -25,6 +27,8 @@ interface PlayerStats {
     assists: number
     yellow_cards: number
     red_cards: number
+    clean_sheets: number
+    saves: number
     minutes_played: number
   }>
 }
@@ -221,66 +225,155 @@ export default function PlayerStatsPage() {
         </Card>
 
         {/* Statistics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Total Goals</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total_goals}</p>
-                  <p className="text-xs text-yellow-600 font-medium mt-1">Goals Scored</p>
-                </div>
-                <div className="p-4 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                  <Trophy className="h-8 w-8 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mb-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Player Statistics</h2>
+            <p className="text-gray-600">Comprehensive performance metrics</p>
+          </div>
 
-          <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Total Assists</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total_assists}</p>
-                  <p className="text-xs text-blue-600 font-medium mt-1">Key Passes</p>
+          {/* Primary Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {/* Goals Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-yellow-50 to-orange-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-orange-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Trophy className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Goals</p>
+                    <p className="text-xs text-yellow-600 font-medium">Scored</p>
+                  </div>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                  <Award className="h-8 w-8 text-white" />
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_goals}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full" style={{width: `${Math.min((stats.total_goals / Math.max(stats.matches_played, 1)) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? (stats.total_goals / stats.matches_played).toFixed(1) : 0} per match</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Matches Played</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.matches_played}</p>
-                  <p className="text-xs text-green-600 font-medium mt-1">Games Played</p>
+            {/* Assists Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-blue-50 to-purple-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Award className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Assists</p>
+                    <p className="text-xs text-blue-600 font-medium">Key Passes</p>
+                  </div>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                  <Calendar className="h-8 w-8 text-white" />
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_assists}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" style={{width: `${Math.min((stats.total_assists / Math.max(stats.matches_played, 1)) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? (stats.total_assists / stats.matches_played).toFixed(1) : 0} per match</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Total Minutes</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total_minutes}</p>
-                  <p className="text-xs text-purple-600 font-medium mt-1">Minutes Played</p>
+            {/* Matches Played Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-green-50 to-emerald-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Calendar className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Matches</p>
+                    <p className="text-xs text-green-600 font-medium">Played</p>
+                  </div>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                  <Clock className="h-8 w-8 text-white" />
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.matches_played}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style={{width: `${Math.min((stats.matches_played / 20) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.total_minutes} total minutes</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Minutes Played Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Minutes</p>
+                    <p className="text-xs text-purple-600 font-medium">Played</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_minutes}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{width: `${Math.min((stats.total_minutes / (stats.matches_played * 90)) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? (stats.total_minutes / stats.matches_played).toFixed(0) : 0} avg per match</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Secondary Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Clean Sheets Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-blue-50 to-indigo-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Shield className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Clean Sheets</p>
+                    <p className="text-xs text-blue-600 font-medium">Shutouts</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_clean_sheets}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full" style={{width: `${Math.min((stats.total_clean_sheets / Math.max(stats.matches_played, 1)) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? ((stats.total_clean_sheets / stats.matches_played) * 100).toFixed(1) : 0}% clean sheet rate</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Saves Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Save className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Saves</p>
+                    <p className="text-xs text-purple-600 font-medium">Shot Stops</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_saves}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{width: `${Math.min((stats.total_saves / Math.max(stats.matches_played, 1)) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? (stats.total_saves / stats.matches_played).toFixed(1) : 0} per match</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Recent Matches */}
@@ -344,6 +437,18 @@ export default function PlayerStatsPage() {
                             <div className="flex items-center text-red-600">
                               <Target className="h-4 w-4 mr-2" />
                               <span className="font-medium">{match.red_cards} red</span>
+                            </div>
+                          )}
+                          {match.clean_sheets > 0 && (
+                            <div className="flex items-center text-blue-600">
+                              <Shield className="h-4 w-4 mr-2" />
+                              <span className="font-medium">Clean sheet</span>
+                            </div>
+                          )}
+                          {match.saves > 0 && (
+                            <div className="flex items-center text-purple-600">
+                              <Save className="h-4 w-4 mr-2" />
+                              <span className="font-medium">{match.saves} save{match.saves !== 1 ? 's' : ''}</span>
                             </div>
                           )}
                         </div>

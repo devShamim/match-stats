@@ -104,6 +104,28 @@ export async function PUT(request: NextRequest) {
       })
     })
 
+    // Add saves
+    details.saves.forEach((save: any) => {
+      eventsToInsert.push({
+        match_id: matchId,
+        event_type: 'save',
+        minute: save.minute,
+        team: save.team,
+        player: save.player
+      })
+    })
+
+    // Add clean sheets
+    details.clean_sheets.forEach((cleanSheet: any) => {
+      eventsToInsert.push({
+        match_id: matchId,
+        event_type: 'clean_sheet',
+        minute: null, // Clean sheets don't have a specific minute
+        team: cleanSheet.team,
+        player: cleanSheet.player
+      })
+    })
+
     // Insert all events
     if (eventsToInsert.length > 0) {
       const { error: eventsError } = await supabaseAdmin()
@@ -118,6 +140,7 @@ export async function PUT(request: NextRequest) {
         )
       }
     }
+
 
     // Get updated match data
     const { data: matchData, error: matchFetchError } = await supabaseAdmin()

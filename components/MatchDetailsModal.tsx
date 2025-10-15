@@ -46,6 +46,19 @@ interface Substitution {
   team: 'A' | 'B'
 }
 
+interface Save {
+  id?: string
+  minute: number
+  player: string
+  team: 'A' | 'B'
+}
+
+interface CleanSheet {
+  id?: string
+  player: string
+  team: 'A' | 'B'
+}
+
 interface MatchStats {
   possession_teamA: number
   possession_teamB: number
@@ -61,6 +74,8 @@ interface MatchDetails {
   goals: Goal[]
   cards: Card[]
   substitutions: Substitution[]
+  saves: Save[]
+  clean_sheets: CleanSheet[]
   stats: MatchStats
   match_summary?: string
   teamAPlayers?: string[]
@@ -73,7 +88,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const { showToast } = useToast()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'stats' | 'others'>('goals')
+  const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'saves' | 'clean_sheets' | 'stats' | 'others'>('goals')
 
   // State for match info form
   const [matchInfo, setMatchInfo] = useState({
@@ -101,6 +116,8 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     goals: [],
     cards: [],
     substitutions: [],
+    saves: [],
+    clean_sheets: [],
     stats: {
       possession_teamA: 50,
       possession_teamB: 50,
@@ -142,6 +159,8 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
             goals: data.details.goals || [],
             cards: data.details.cards || [],
             substitutions: data.details.substitutions || [],
+            saves: data.details.saves || [],
+            clean_sheets: data.details.clean_sheets || [],
             stats: data.details.stats || prev.stats,
             match_summary: data.details.match_summary || '',
             teamAPlayers: data.details.teamAPlayers || [],
@@ -258,6 +277,52 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     setDetails(prev => ({
       ...prev,
       substitutions: prev.substitutions.filter((_, i) => i !== index)
+    }))
+  }
+
+  const addSave = () => {
+    setDetails(prev => ({
+      ...prev,
+      saves: [...prev.saves, { minute: 0, player: '', team: 'A' }]
+    }))
+  }
+
+  const updateSave = (index: number, field: keyof Save, value: any) => {
+    setDetails(prev => ({
+      ...prev,
+      saves: prev.saves.map((save, i) =>
+        i === index ? { ...save, [field]: value } : save
+      )
+    }))
+  }
+
+  const removeSave = (index: number) => {
+    setDetails(prev => ({
+      ...prev,
+      saves: prev.saves.filter((_, i) => i !== index)
+    }))
+  }
+
+  const addCleanSheet = () => {
+    setDetails(prev => ({
+      ...prev,
+      clean_sheets: [...prev.clean_sheets, { player: '', team: 'A' }]
+    }))
+  }
+
+  const updateCleanSheet = (index: number, field: keyof CleanSheet, value: any) => {
+    setDetails(prev => ({
+      ...prev,
+      clean_sheets: prev.clean_sheets.map((cleanSheet, i) =>
+        i === index ? { ...cleanSheet, [field]: value } : cleanSheet
+      )
+    }))
+  }
+
+  const removeCleanSheet = (index: number) => {
+    setDetails(prev => ({
+      ...prev,
+      clean_sheets: prev.clean_sheets.filter((_, i) => i !== index)
     }))
   }
 
@@ -424,6 +489,8 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
               { id: 'goals', label: 'Goals', icon: Target },
               { id: 'cards', label: 'Cards', icon: AlertTriangle },
               { id: 'subs', label: 'Substitutions', icon: Users },
+              { id: 'saves', label: 'Saves', icon: Shield },
+              { id: 'clean_sheets', label: 'Clean Sheets', icon: Shield },
               { id: 'stats', label: 'Statistics', icon: Zap },
               { id: 'others', label: 'Others', icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
@@ -710,6 +777,144 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                         variant="outline"
                         size="sm"
                         onClick={() => removeSubstitution(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Saves Tab */}
+          {activeTab === 'saves' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Saves</h3>
+                <Button onClick={addSave} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Save
+                </Button>
+              </div>
+
+              {details.saves.map((save, index) => (
+                <Card key={index} className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Minute
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="120"
+                        value={save.minute}
+                        onChange={(e) => updateSave(index, 'minute', parseInt(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Team
+                      </label>
+                      <select
+                        value={save.team}
+                        onChange={(e) => updateSave(index, 'team', e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="A">{details.teamAName || 'Team A'}</option>
+                        <option value="B">{details.teamBName || 'Team B'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Player
+                      </label>
+                      <select
+                        value={save.player}
+                        onChange={(e) => updateSave(index, 'player', e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Select player</option>
+                        {save.team === 'A'
+                          ? details.teamAPlayers?.map(player => (
+                              <option key={player} value={player}>{player}</option>
+                            ))
+                          : details.teamBPlayers?.map(player => (
+                              <option key={player} value={player}>{player}</option>
+                            ))
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeSave(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Clean Sheets Tab */}
+          {activeTab === 'clean_sheets' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Clean Sheets</h3>
+                <Button onClick={addCleanSheet} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Clean Sheet
+                </Button>
+              </div>
+
+              {details.clean_sheets.map((cleanSheet, index) => (
+                <Card key={index} className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Team
+                      </label>
+                      <select
+                        value={cleanSheet.team}
+                        onChange={(e) => updateCleanSheet(index, 'team', e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="A">{details.teamAName || 'Team A'}</option>
+                        <option value="B">{details.teamBName || 'Team B'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Player
+                      </label>
+                      <select
+                        value={cleanSheet.player}
+                        onChange={(e) => updateCleanSheet(index, 'player', e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Select player</option>
+                        {cleanSheet.team === 'A'
+                          ? details.teamAPlayers?.map(player => (
+                              <option key={player} value={player}>{player}</option>
+                            ))
+                          : details.teamBPlayers?.map(player => (
+                              <option key={player} value={player}>{player}</option>
+                            ))
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeCleanSheet(index)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Minus className="h-4 w-4" />

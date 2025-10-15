@@ -201,6 +201,52 @@ export async function GET(request: NextRequest) {
       // Debug: Log the raw data
       console.log('Raw playerStats (match_players with stats):', JSON.stringify(playerStats, null, 2))
 
+      // Get saves from match_events for this player
+      const { data: savesEvents, error: savesError } = await supabaseAdmin()
+        .from('match_events')
+        .select(`
+          *,
+          match:matches(*)
+        `)
+        .eq('event_type', 'save')
+        .eq('player', playerStats[0]?.player?.user_profile?.name)
+
+      if (savesError) {
+        console.error('Error fetching saves:', savesError)
+      }
+
+      // Get clean sheets from match_events for this player
+      const { data: cleanSheetsEvents, error: cleanSheetsError } = await supabaseAdmin()
+        .from('match_events')
+        .select(`
+          *,
+          match:matches(*)
+        `)
+        .eq('event_type', 'clean_sheet')
+        .eq('player', playerStats[0]?.player?.user_profile?.name)
+
+      if (cleanSheetsError) {
+        console.error('Error fetching clean sheets:', cleanSheetsError)
+      }
+
+      // Create a map of saves per match
+      const savesPerMatch = new Map()
+      savesEvents?.forEach(save => {
+        if (!savesPerMatch.has(save.match_id)) {
+          savesPerMatch.set(save.match_id, 0)
+        }
+        savesPerMatch.set(save.match_id, savesPerMatch.get(save.match_id) + 1)
+      })
+
+      // Create a map of clean sheets per match
+      const cleanSheetsPerMatch = new Map()
+      cleanSheetsEvents?.forEach(cleanSheet => {
+        if (!cleanSheetsPerMatch.has(cleanSheet.match_id)) {
+          cleanSheetsPerMatch.set(cleanSheet.match_id, 0)
+        }
+        cleanSheetsPerMatch.set(cleanSheet.match_id, cleanSheetsPerMatch.get(cleanSheet.match_id) + 1)
+      })
+
       // Aggregate stats from match_players with nested stats
       const aggregatedStats = {
         total_goals: 0,
@@ -208,6 +254,8 @@ export async function GET(request: NextRequest) {
         total_yellow_cards: 0,
         total_red_cards: 0,
         total_minutes: 0,
+        total_clean_sheets: 0,
+        total_saves: 0,
         matches_played: playerStats.length,
         recent_matches: [] as Array<{
           match_id: string
@@ -220,6 +268,8 @@ export async function GET(request: NextRequest) {
           yellow_cards: number
           red_cards: number
           minutes_played: number
+          clean_sheets: number
+          saves: number
         }>
       }
 
@@ -247,6 +297,12 @@ export async function GET(request: NextRequest) {
           aggregatedStats.total_assists += stats.assists || 0
           aggregatedStats.total_yellow_cards += stats.yellow_cards || 0
           aggregatedStats.total_red_cards += stats.red_cards || 0
+          // Get clean sheets from events for this match
+          const matchCleanSheets = cleanSheetsPerMatch.get(matchPlayer.match.id) || 0
+          aggregatedStats.total_clean_sheets += matchCleanSheets
+          // Get saves from events for this match
+          const matchSaves = savesPerMatch.get(matchPlayer.match.id) || 0
+          aggregatedStats.total_saves += matchSaves
           // Use 90 minutes per match if minutes_played is 0 or not set
           aggregatedStats.total_minutes += stats.minutes_played || 90
 
@@ -262,12 +318,20 @@ export async function GET(request: NextRequest) {
               assists: stats.assists,
               yellow_cards: stats.yellow_cards,
               red_cards: stats.red_cards,
-              minutes_played: stats.minutes_played || 90
+              minutes_played: stats.minutes_played || 90,
+              clean_sheets: matchCleanSheets,
+              saves: matchSaves
             })
           }
         } else {
           // If no stats record exists, assume 90 minutes played
           aggregatedStats.total_minutes += 90
+          // Get clean sheets from events for this match even if no stats record
+          const matchCleanSheets = cleanSheetsPerMatch.get(matchPlayer.match.id) || 0
+          aggregatedStats.total_clean_sheets += matchCleanSheets
+          // Get saves from events for this match even if no stats record
+          const matchSaves = savesPerMatch.get(matchPlayer.match.id) || 0
+          aggregatedStats.total_saves += matchSaves
 
           // Add to recent matches with default values
           if (matchPlayer.match) {
@@ -281,7 +345,9 @@ export async function GET(request: NextRequest) {
               assists: 0,
               yellow_cards: 0,
               red_cards: 0,
-              minutes_played: 90
+              minutes_played: 90,
+              clean_sheets: matchCleanSheets,
+              saves: matchSaves
             })
           }
         }

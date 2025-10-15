@@ -24,6 +24,46 @@ export async function GET() {
     // Aggregate player statistics
     const playerStatsMap = new Map()
 
+    // Get all saves from match_events
+    const { data: allSaves, error: savesError } = await supabaseAdmin()
+      .from('match_events')
+      .select('*')
+      .eq('event_type', 'save')
+
+    if (savesError) {
+      console.error('Error fetching saves:', savesError)
+    }
+
+    // Get all clean sheets from match_events
+    const { data: allCleanSheets, error: cleanSheetsError } = await supabaseAdmin()
+      .from('match_events')
+      .select('*')
+      .eq('event_type', 'clean_sheet')
+
+    if (cleanSheetsError) {
+      console.error('Error fetching clean sheets:', cleanSheetsError)
+    }
+
+    // Create a map of saves per player per match
+    const savesPerPlayerPerMatch = new Map()
+    allSaves?.forEach(save => {
+      const key = `${save.match_id}-${save.player}`
+      if (!savesPerPlayerPerMatch.has(key)) {
+        savesPerPlayerPerMatch.set(key, 0)
+      }
+      savesPerPlayerPerMatch.set(key, savesPerPlayerPerMatch.get(key) + 1)
+    })
+
+    // Create a map of clean sheets per player per match
+    const cleanSheetsPerPlayerPerMatch = new Map()
+    allCleanSheets?.forEach(cleanSheet => {
+      const key = `${cleanSheet.match_id}-${cleanSheet.player}`
+      if (!cleanSheetsPerPlayerPerMatch.has(key)) {
+        cleanSheetsPerPlayerPerMatch.set(key, 0)
+      }
+      cleanSheetsPerPlayerPerMatch.set(key, cleanSheetsPerPlayerPerMatch.get(key) + 1)
+    })
+
     allMatchPlayers?.forEach(matchPlayer => {
       if (matchPlayer.player?.user_profile?.name) {
         const playerName = matchPlayer.player.user_profile.name
@@ -38,6 +78,8 @@ export async function GET() {
             assists: 0,
             yellow_cards: 0,
             red_cards: 0,
+            clean_sheets: 0,
+            saves: 0,
             matches_played: 0,
             total_minutes: 0,
             goals_per_match: 0,
@@ -59,10 +101,26 @@ export async function GET() {
           playerStats.assists += stats.assists || 0
           playerStats.yellow_cards += stats.yellow_cards || 0
           playerStats.red_cards += stats.red_cards || 0
+          // Get clean sheets from events for this player in this match
+          const cleanSheetsKey = `${matchPlayer.match.id}-${playerName}`
+          const matchCleanSheets = cleanSheetsPerPlayerPerMatch.get(cleanSheetsKey) || 0
+          playerStats.clean_sheets += matchCleanSheets
+          // Get saves from events for this player in this match
+          const savesKey = `${matchPlayer.match.id}-${playerName}`
+          const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
+          playerStats.saves += matchSaves
           playerStats.total_minutes += stats.minutes_played || 90
         } else {
           // If no stats record exists, assume 90 minutes played
           playerStats.total_minutes += 90
+          // Get clean sheets from events for this player in this match even if no stats record
+          const cleanSheetsKey = `${matchPlayer.match.id}-${playerName}`
+          const matchCleanSheets = cleanSheetsPerPlayerPerMatch.get(cleanSheetsKey) || 0
+          playerStats.clean_sheets += matchCleanSheets
+          // Get saves from events for this player in this match even if no stats record
+          const savesKey = `${matchPlayer.match.id}-${playerName}`
+          const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
+          playerStats.saves += matchSaves
         }
       }
     })
@@ -120,6 +178,18 @@ export async function GET() {
       .sort((a, b) => b.total_minutes - a.total_minutes)
       .slice(0, 10)
 
+    // Top Clean Sheets
+    const topCleanSheets = allPlayerStats
+      .filter(player => player.clean_sheets > 0)
+      .sort((a, b) => b.clean_sheets - a.clean_sheets)
+      .slice(0, 10)
+
+    // Top Saves
+    const topSaves = allPlayerStats
+      .filter(player => player.saves > 0)
+      .sort((a, b) => b.saves - a.saves)
+      .slice(0, 10)
+
     return NextResponse.json({
       success: true,
       data: {
@@ -128,7 +198,9 @@ export async function GET() {
         mostActivePlayers,
         goalsPerMatch,
         topPerformers,
-        mostMinutesPlayed
+        mostMinutesPlayed,
+        topCleanSheets,
+        topSaves
       }
     }, {
       headers: {
