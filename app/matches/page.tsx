@@ -12,7 +12,7 @@ import ScoreUpdateModal from '@/components/ScoreUpdateModal'
 import MatchDetailsModal from '@/components/MatchDetailsModal'
 import MatchDetailsView from '@/components/MatchDetailsView'
 import { Match } from '@/types'
-import { Plus, Calendar, Search, Loader2, Filter } from 'lucide-react'
+import { Plus, Calendar, Search, Loader2, Filter, Star, Trophy, Target, Zap, Shield, Save } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -213,106 +213,156 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Matches</h1>
-          <p className="text-gray-600 mt-2">View match history and results</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 rounded-b-3xl">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-black/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/3 to-transparent transform -skew-x-12"></div>
         </div>
-        {isAdmin && (
-          <Button asChild>
-            <Link href="/admin/create-match">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Match
-            </Link>
-          </Button>
+
+        <div className="relative px-6 py-16">
+          <div className="flex justify-between items-center">
+            <div className="flex-1">
+              <div className="flex items-center mb-6">
+                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mr-4">
+                  <Calendar className="h-4 w-4 text-pink-300 mr-2" />
+                  <span className="text-white font-medium text-sm">Total Matches</span>
+                </div>
+                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                  <Star className="h-4 w-4 text-pink-300 mr-2" />
+                  <span className="text-white font-medium text-sm">{filteredMatches.length} Matches</span>
+                </div>
+              </div>
+
+              <h1 className="text-5xl font-bold text-white mb-4">
+                Matches
+              </h1>
+              <p className="text-white/80 text-lg mb-8 max-w-2xl">
+                Track game results and relive the excitement of every match
+              </p>
+
+              {/* Search Bar */}
+              <div className="max-w-lg">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    placeholder="Search matches by teams, location, or status..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-12 h-14 bg-white/95 backdrop-blur-sm border-0 rounded-2xl text-gray-900 placeholder-gray-500 focus:bg-white focus:ring-2 focus:ring-pink-400 text-lg"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 text-center">
+                <p className="text-white/70 text-sm mb-3 font-medium">Total Matches</p>
+                <div className="text-4xl font-bold text-white mb-3">
+                  {filteredMatches.length}
+                </div>
+                <div className="w-20 h-1 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full mx-auto"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Action Bar */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-4">
+            <Badge variant="outline" className="text-sm bg-white border-gray-200 text-gray-700 h-9 rounded-lg">
+              <Calendar className="h-4 w-4 mr-1" />
+              {filteredMatches.length} match{filteredMatches.length !== 1 ? 'es' : ''}
+            </Badge>
+
+            {/* Filters */}
+            <div className="flex items-center space-x-3">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="flex h-9 rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+              >
+                <option value="all">All Status</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="flex h-9 rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+              >
+                <option value="all">All Types</option>
+                <option value="internal">Internal</option>
+                <option value="external">External</option>
+              </select>
+            </div>
+          </div>
+
+          {isAdmin && (
+            <Button asChild className="bg-pink-600 hover:bg-pink-700 text-white">
+              <Link href="/admin/create-match">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Match
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        {/* Matches Grid */}
+        {filteredMatches.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {filteredMatches.map((match, index) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                onUpdateScore={handleUpdateScore}
+                onViewDetails={handleViewDetails}
+                onDelete={handleDeleteMatch}
+                isAdmin={isAdmin}
+                index={index}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+            <CardHeader className="text-center py-12">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full flex items-center justify-center mb-6">
+                <Calendar className="h-12 w-12 text-pink-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' ? 'No Matches Found' : 'No Matches Yet'}
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-600">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                  ? 'Try adjusting your search terms or filters'
+                  : 'Add matches to start tracking game results'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center pb-12">
+              <p className="text-gray-500 mb-6">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                  ? 'No matches match your search criteria.'
+                  : 'Matches will appear here once they are added to the system.'
+                }
+              </p>
+              {isAdmin && !searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
+                <Button asChild className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white">
+                  <Link href="/admin/create-match">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Match
+                  </Link>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
-
-      {/* Search and Filters */}
-      <div className="mb-6 space-y-4">
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search matches..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Badge variant="outline" className="text-sm">
-            {filteredMatches.length} match{filteredMatches.length !== 1 ? 'es' : ''}
-          </Badge>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-700">Filters:</span>
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <option value="all">All Status</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <option value="all">All Types</option>
-            <option value="internal">Internal</option>
-            <option value="external">External</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Matches Grid */}
-      {filteredMatches.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMatches.map((match) => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              onUpdateScore={handleUpdateScore}
-              onViewDetails={handleViewDetails}
-              onDelete={handleDeleteMatch}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2" />
-              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' ? 'No Matches Found' : 'No Matches Yet'}
-            </CardTitle>
-            <CardDescription>
-              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                ? 'Try adjusting your search terms or filters'
-                : 'Add matches to start tracking game results'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                ? 'No matches match your search criteria.'
-                : 'Matches will appear here once they are added to the system.'
-              }
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Score Update Modal */}
       <ScoreUpdateModal

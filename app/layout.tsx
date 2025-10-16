@@ -28,9 +28,8 @@ export default function RootLayout({
       <head>
         <title>Football Statistics</title>
         <meta name="description" content="Track and manage football team statistics, player performance, and match results" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="icon" href="../favicon.ico" />
+        <link rel="shortcut icon" href="../favicon.ico" />
       </head>
       <body>
         <UserProvider>

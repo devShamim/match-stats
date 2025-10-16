@@ -50,9 +50,9 @@ export default function Sidebar({ isExpanded, onToggle }: SidebarProps) {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         {isExpanded ? (
-          <h1 className="text-xl font-bold text-white">⚽ Football Stats</h1>
+          <h1 className="text-xl font-bold text-white">⚽ <a href="/stats" className="text-white">Football Stats</a></h1>
         ) : (
-          <div className="text-xl">⚽</div>
+          <div className="text-xl"><a href="/stats" className="text-white">⚽</a></div>
         )}
         <Button
           variant="ghost"
