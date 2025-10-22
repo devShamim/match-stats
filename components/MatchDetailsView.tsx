@@ -229,7 +229,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                   </div>
                 )}
               </div>
-              <div className="text-center px-8">
+              <div className="text-center">
                 <div className="text-2xl font-bold text-gray-500">VS</div>
               </div>
               <div className="text-center flex-1">
@@ -245,6 +245,69 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                 )}
               </div>
             </div>
+
+            {/* Goal Scorers */}
+            {details.goals.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex justify-between">
+                  {/* Team A Goals */}
+                  <div className="flex-1 pr-4 text-center">
+                    {(() => {
+                      const teamAGoals = details.goals.filter(goal => goal.team === 'A')
+                      const groupedGoals = teamAGoals.reduce((acc, goal) => {
+                        if (!acc[goal.scorer]) {
+                          acc[goal.scorer] = []
+                        }
+                        acc[goal.scorer].push(goal.minute)
+                        return acc
+                      }, {} as Record<string, number[]>)
+
+                      return Object.keys(groupedGoals).length > 0 ? (
+                        Object.entries(groupedGoals)
+                          .sort((a, b) => Math.min(...a[1]) - Math.min(...b[1]))
+                          .map(([scorer, minutes]) => (
+                            <div key={scorer} className="py-1">
+                              <span className="text-sm text-gray-700">
+                                {scorer} ({minutes.sort((a, b) => a - b).join("', ")}')
+                              </span>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">No goals</div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Team B Goals */}
+                  <div className="flex-1 pl-4 text-center">
+                    {(() => {
+                      const teamBGoals = details.goals.filter(goal => goal.team === 'B')
+                      const groupedGoals = teamBGoals.reduce((acc, goal) => {
+                        if (!acc[goal.scorer]) {
+                          acc[goal.scorer] = []
+                        }
+                        acc[goal.scorer].push(goal.minute)
+                        return acc
+                      }, {} as Record<string, number[]>)
+
+                      return Object.keys(groupedGoals).length > 0 ? (
+                        Object.entries(groupedGoals)
+                          .sort((a, b) => Math.min(...a[1]) - Math.min(...b[1]))
+                          .map(([scorer, minutes]) => (
+                            <div key={scorer} className="py-1">
+                              <span className="text-sm text-gray-700">
+                                {scorer} ({minutes.sort((a, b) => a - b).join("', ")}')
+                              </span>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">No goals</div>
+                      )
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Goals Section */}
@@ -253,7 +316,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Target className="h-5 w-5 mr-2 text-green-600" />
-                  Goals ({details.goals.length})
+                  Timeline ({details.goals.length} goals)
                 </CardTitle>
               </CardHeader>
               <CardContent>
