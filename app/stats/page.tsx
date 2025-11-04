@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown, Clock, MapPin, Zap, Star, Shield, Save } from 'lucide-react'
 import Link from 'next/link'
-import MatchDetailsView from '@/components/MatchDetailsView'
 
 interface PlayerStats {
   player_id: string
@@ -43,11 +43,10 @@ interface StatsData {
 }
 
 export default function PublicStatsView() {
+  const router = useRouter()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedMatch, setSelectedMatch] = useState<any>(null)
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
   useEffect(() => {
     fetchPublicStats()
@@ -137,13 +136,8 @@ export default function PublicStatsView() {
   }
 
   const handleViewDetails = (match: any) => {
-    setSelectedMatch(match)
-    setIsDetailsModalOpen(true)
-  }
-
-  const handleCloseDetailsModal = () => {
-    setSelectedMatch(null)
-    setIsDetailsModalOpen(false)
+    // Navigate to match details page
+    router.push(`/matches/${match.id}`)
   }
 
   if (loading) {
@@ -781,12 +775,6 @@ export default function PublicStatsView() {
           </p>
         </div>
 
-        {/* Match Details Modal */}
-        <MatchDetailsView
-          match={selectedMatch}
-          isOpen={isDetailsModalOpen}
-          onClose={handleCloseDetailsModal}
-        />
       </div>
     </div>
   )

@@ -155,6 +155,21 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
+      match: {
+        id: match.id,
+        date: match.date,
+        location: match.location,
+        opponent: match.opponent,
+        type: match.type,
+        status: match.status,
+        score_teama: match.score_teama,
+        score_teamb: match.score_teamb,
+        teamA_name: match.teamA_name,
+        teamB_name: match.teamB_name,
+        match_summary: match.match_summary,
+        created_at: match.created_at,
+        updated_at: match.updated_at
+      },
       details
     }, {
       headers: {

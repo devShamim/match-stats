@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,15 +11,17 @@ import { useToast } from '@/components/ui/toast'
 import MatchCard from '@/components/MatchCard'
 import ScoreUpdateModal from '@/components/ScoreUpdateModal'
 import MatchDetailsModal from '@/components/MatchDetailsModal'
-import MatchDetailsView from '@/components/MatchDetailsView'
 import { Match } from '@/types'
 import { Plus, Calendar, Search, Loader2, Filter, Star, Trophy, Target, Zap, Shield, Save } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function MatchesPage() {
   const { isAdmin } = useUser()
   const { showToast } = useToast()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [matches, setMatches] = useState<Match[]>([])
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,8 +32,6 @@ export default function MatchesPage() {
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false)
   const [detailsMatch, setDetailsMatch] = useState<Match | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
-  const [viewMatch, setViewMatch] = useState<Match | null>(null)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [deletingMatch, setDeletingMatch] = useState<Match | null>(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
@@ -119,6 +120,20 @@ export default function MatchesPage() {
     }
   }, [])
 
+  // Check for edit query parameter and open modal
+  useEffect(() => {
+    const editMatchId = searchParams?.get('edit')
+    if (editMatchId && matches.length > 0 && isAdmin) {
+      const matchToEdit = matches.find(m => m.id === editMatchId)
+      if (matchToEdit) {
+        setDetailsMatch(matchToEdit)
+        setIsDetailsModalOpen(true)
+        // Remove query parameter from URL
+        router.replace('/matches', { scroll: false })
+      }
+    }
+  }, [searchParams, matches, isAdmin, router])
+
   const handleUpdateScore = (match: Match) => {
     setUpdatingMatch(match)
     setIsScoreModalOpen(true)
@@ -141,25 +156,8 @@ export default function MatchesPage() {
   }
 
   const handleViewDetails = (match: Match) => {
-    if (isAdmin) {
-      // Admin can edit details
-      setDetailsMatch(match)
-      setIsDetailsModalOpen(true)
-    } else {
-      // Non-admin users can only view
-      setViewMatch(match)
-      setIsViewModalOpen(true)
-    }
-  }
-
-  const handleCloseDetailsModal = () => {
-    setIsDetailsModalOpen(false)
-    setDetailsMatch(null)
-  }
-
-  const handleCloseViewModal = () => {
-    setIsViewModalOpen(false)
-    setViewMatch(null)
+    // Navigate to match details page
+    router.push(`/matches/${match.id}`)
   }
 
   const handleDeleteMatch = (match: Match) => {
@@ -376,15 +374,11 @@ export default function MatchesPage() {
       <MatchDetailsModal
         match={detailsMatch}
         isOpen={isDetailsModalOpen}
-        onClose={handleCloseDetailsModal}
+        onClose={() => {
+          setIsDetailsModalOpen(false)
+          setDetailsMatch(null)
+        }}
         onSave={handleSaveScore}
-      />
-
-      {/* Match Details View (Read-only) */}
-      <MatchDetailsView
-        match={viewMatch}
-        isOpen={isViewModalOpen}
-        onClose={handleCloseViewModal}
       />
 
       {/* Delete Confirmation Modal */}
