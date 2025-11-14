@@ -323,7 +323,7 @@ export async function getPlayerStats(): Promise<PlayerStats[]> {
       *,
       user_profile:user_profiles(*),
       match_players(
-        stats(goals, assists, yellow_cards, red_cards, minutes_played)
+        stats(goals, assists, yellow_cards, red_cards, minutes_played, own_goals)
       )
     `)
 
@@ -338,6 +338,8 @@ export async function getPlayerStats(): Promise<PlayerStats[]> {
       sum + (mp.stats?.[0]?.yellow_cards || 0), 0) || 0
     const totalRedCards = player.match_players?.reduce((sum: number, mp: any) =>
       sum + (mp.stats?.[0]?.red_cards || 0), 0) || 0
+    const totalOwnGoals = player.match_players?.reduce((sum: number, mp: any) =>
+      sum + (mp.stats?.[0]?.own_goals || 0), 0) || 0
     const totalMinutes = player.match_players?.reduce((sum: number, mp: any) =>
       sum + (mp.stats?.[0]?.minutes_played || 0), 0) || 0
     const matchesPlayed = player.match_players?.length || 0
@@ -348,6 +350,7 @@ export async function getPlayerStats(): Promise<PlayerStats[]> {
       total_assists: totalAssists,
       total_yellow_cards: totalYellowCards,
       total_red_cards: totalRedCards,
+      total_own_goals: totalOwnGoals,
       matches_played: matchesPlayed,
       total_minutes: totalMinutes
     }
