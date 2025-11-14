@@ -1,8 +1,9 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tooltip } from '@/components/ui/tooltip'
 import PlayerAvatar from '@/components/PlayerAvatar'
-import { Trophy, Target, Users, Award, Clock, TrendingUp, Shield, Save } from 'lucide-react'
+import { Trophy, Target, Users, Award, Clock, TrendingUp, Shield, Save, Info } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
@@ -12,6 +13,7 @@ interface PlayerStats {
   photo_url?: string
   goals: number
   assists: number
+  own_goals?: number
   yellow_cards: number
   red_cards: number
   clean_sheets: number
@@ -20,6 +22,14 @@ interface PlayerStats {
   total_minutes: number
   goals_per_match: number
   assists_per_match: number
+  unified_score?: number
+  score_breakdown?: {
+    goals: number
+    assists: number
+    saves: number
+    clean_sheets: number
+    own_goals: number
+  }
 }
 
 interface LeaderboardsData {
@@ -65,13 +75,22 @@ export default function LeaderboardsPage() {
   const renderLeaderboard = (players: PlayerStats[], title: string, icon: React.ReactNode, getValue: (player: PlayerStats) => number, getLabel: (player: PlayerStats) => string) => (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          {icon}
-          {title}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center">
+            {icon}
+            {title}
+          </div>
+          {title === 'Top Performers' && (
+            <Tooltip content="Unified scoring: Goals (3pts), Assists (2pts), Saves (0.5pts), Clean Sheets (2pts), Own Goals (-2pts)">
+              <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
+            </Tooltip>
+          )}
         </CardTitle>
-        <CardDescription>
-          {title.toLowerCase()}
-        </CardDescription>
+        {title !== 'Top Performers' && (
+          <CardDescription>
+            {title.toLowerCase()}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -186,13 +205,25 @@ export default function LeaderboardsPage() {
             (player) => `${player.goals_per_match} per match`
           )}
 
-          {/* Top Performers (Goals + Assists) */}
+          {/* Top Performers (Unified Scoring System) */}
           {renderLeaderboard(
             data.topPerformers,
             'Top Performers',
-            <Award className="h-5 w-5 mr-2" />,
-            (player) => player.goals + player.assists,
-            (player) => `${player.goals + player.assists} total (${player.goals}G ${player.assists}A)`
+            <TrendingUp className="h-5 w-5 mr-2 text-green-600" />,
+            (player) => player.unified_score || 0,
+            (player) => {
+              const breakdown = player.score_breakdown
+              if (breakdown) {
+                const parts = []
+                if (player.goals > 0) parts.push(`${player.goals}G`)
+                if (player.assists > 0) parts.push(`${player.assists}A`)
+                if (player.saves > 0) parts.push(`${player.saves}Sv`)
+                if (player.clean_sheets > 0) parts.push(`${player.clean_sheets}CS`)
+                if (player.own_goals && player.own_goals > 0) parts.push(`${player.own_goals}OG`)
+                return parts.length > 0 ? parts.join(' ') : '0 pts'
+              }
+              return `${player.goals}G ${player.assists}A`
+            }
           )}
 
           {/* Most Minutes Played */}

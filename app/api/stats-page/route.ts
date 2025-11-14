@@ -71,14 +71,17 @@ export async function GET(request: NextRequest) {
       const playerId = matchPlayer.player_id
       const playerName = matchPlayer.player?.user_profile?.name
       const playerPhoto = matchPlayer.player?.user_profile?.photo_url
+      const playerPosition = matchPlayer.player?.user_profile?.position || matchPlayer.player?.preferred_position || null
 
       if (!playerStatsMap.has(playerId)) {
         playerStatsMap.set(playerId, {
           player_id: playerId,
           player_name: playerName,
           player_photo: playerPhoto,
+          player_position: playerPosition,
           total_goals: 0,
           total_assists: 0,
+          total_own_goals: 0,
           total_yellow_cards: 0,
           total_red_cards: 0,
           total_clean_sheets: 0,
@@ -101,6 +104,7 @@ export async function GET(request: NextRequest) {
       if (stats) {
         playerStats.total_goals += stats.goals || 0
         playerStats.total_assists += stats.assists || 0
+        playerStats.total_own_goals += stats.own_goals || 0
         playerStats.total_yellow_cards += stats.yellow_cards || 0
         playerStats.total_red_cards += stats.red_cards || 0
         // Get clean sheets from events for this player in this match
@@ -158,10 +162,22 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Convert unique matches set to count
+    // Convert unique matches set to count and calculate unified scores
     playerStatsMap.forEach(playerStats => {
       playerStats.matches_played = playerStats.unique_matches.size
       delete playerStats.unique_matches // Clean up
+
+      // Calculate Unified Score
+      // Goals: 3 points, Assists: 2 points, Saves: 0.5 points, Clean Sheets: 2 points, Own Goals: -2 points
+      // Future: Match Rating (average × 2) - will be added when match ratings are implemented
+      const goalsPoints = playerStats.total_goals * 3
+      const assistsPoints = playerStats.total_assists * 2
+      const savesPoints = playerStats.total_saves * 0.5
+      const cleanSheetsPoints = playerStats.total_clean_sheets * 2
+      const ownGoalsPenalty = playerStats.total_own_goals * 2 // Negative points
+      // const matchRatingPoints = 0 // Will be: (average_rating × 2) when implemented
+
+      playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty) * 10) / 10
     })
 
     // Convert to arrays and sort
@@ -196,10 +212,11 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => (b.total_yellow_cards + b.total_red_cards) - (a.total_yellow_cards + a.total_red_cards))
       .slice(0, 10)
 
-    // Top performers (combined goals + assists)
+    // Top performers (Unified Scoring System)
+    // Includes: Goals (3pts), Assists (2pts), Saves (0.5pts), Clean Sheets (2pts), Own Goals (-2pts)
     const topPerformers = allPlayerStats
-      .filter(player => (player.total_goals + player.total_assists) > 0)
-      .sort((a, b) => (b.total_goals + b.total_assists) - (a.total_goals + a.total_assists))
+      .filter(player => player.unified_score > 0)
+      .sort((a, b) => b.unified_score - a.unified_score)
       .slice(0, 5)
 
     // Top clean sheets (defenders and goalkeepers)

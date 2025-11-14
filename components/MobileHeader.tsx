@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useUser } from '@/context/UserContext'
 import { Button } from '@/components/ui/button'
 import { LogOut, User, Menu, X } from 'lucide-react'
@@ -29,7 +30,9 @@ export default function MobileHeader({ onToggleSidebar, isSidebarOpen }: MobileH
               <Menu className="h-5 w-5" />
             )}
           </Button>
-          <h1 className="text-lg font-bold text-gray-900">⚽ Football Stats</h1>
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <h1 className="text-lg font-bold text-gray-900 cursor-pointer">⚽ Football Stats</h1>
+          </Link>
         </div>
 
         {user ? (

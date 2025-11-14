@@ -230,33 +230,35 @@ export default function MatchDetailsPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/3 to-transparent transform -skew-x-12"></div>
         </div>
 
-        <div className="relative px-6 py-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="relative px-4 sm:px-6 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <Button
               variant="ghost"
               onClick={() => router.push('/matches')}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 text-sm sm:text-base"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Matches
+              <span className="hidden sm:inline">Back to Matches</span>
+              <span className="sm:hidden">Back</span>
             </Button>
             {isAdmin && (
               <Button
                 onClick={() => router.push(`/matches?edit=${match.id}`)}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30 text-sm sm:text-base"
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Match
+                <span className="hidden sm:inline">Edit Match</span>
+                <span className="sm:hidden">Edit</span>
               </Button>
             )}
           </div>
 
           <div className="flex-1">
-            <CardTitle className="flex items-center text-3xl text-white mb-4">
-              <Trophy className="h-8 w-8 mr-3 text-yellow-300" />
-              {match.type === 'internal' ? 'Internal Match' : match.opponent || 'External Match'}
+            <CardTitle className="flex items-center text-xl sm:text-2xl lg:text-3xl text-white mb-3 sm:mb-4">
+              <Trophy className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-yellow-300" />
+              <span className="break-words">{match.type === 'internal' ? 'Internal Match' : match.opponent || 'External Match'}</span>
             </CardTitle>
-            <CardDescription className="mt-2 flex items-center space-x-4 text-base text-white/90">
+            <CardDescription className="mt-2 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0 text-sm sm:text-base text-white/90">
               <span className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
                 {formatDate(match.date)}
@@ -268,17 +270,17 @@ export default function MatchDetailsPage() {
               {match.location && (
                 <span className="flex items-center">
                   <MapPin className="h-4 w-4 mr-2" />
-                  {match.location}
+                  <span className="break-words">{match.location}</span>
                 </span>
               )}
             </CardDescription>
 
             {/* Match Status and Type */}
-            <div className="flex items-center space-x-3 mt-4">
-              <Badge className={`${getStatusColor(match.status)} text-sm px-3 py-1`}>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4">
+              <Badge className={`${getStatusColor(match.status)} text-xs sm:text-sm px-2 sm:px-3 py-1`}>
                 {match.status.replace('_', ' ').toUpperCase()}
               </Badge>
-              <Badge className={`${getTypeColor(match.type)} text-sm px-3 py-1`}>
+              <Badge className={`${getTypeColor(match.type)} text-xs sm:text-sm px-2 sm:px-3 py-1`}>
                 {match.type.toUpperCase()}
               </Badge>
             </div>
@@ -286,39 +288,45 @@ export default function MatchDetailsPage() {
         </div>
       </div>
 
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto">
         {/* Score Display */}
         <Card className="mb-6 border-0 shadow-xl">
-          <CardContent className="p-6">
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-6">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">Final Score</h3>
+          <CardContent className="p-4 sm:p-6">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6 mb-6">
+              <div className="text-center mb-4 sm:mb-6">
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-700 mb-2">Final Score</h3>
               </div>
-              <div className="flex items-center justify-center">
-                <div className="text-center flex-1">
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
+              {/* Desktop: Side by side, Mobile: Compact horizontal layout */}
+              <div className="flex items-center justify-center gap-3 sm:gap-6">
+                {/* Team A */}
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-3xl sm:text-5xl font-bold text-gray-900 mb-1 sm:mb-2">
                     {(match as any).score_teama || 0}
                   </div>
-                  <div className="text-lg font-medium text-gray-600">{details.teamAName || 'Team A'}</div>
+                  <div className="text-xs sm:text-lg font-medium text-gray-600 break-words px-1">{details.teamAName || 'Team A'}</div>
                   {details.clean_sheet_teamA && (
-                    <div className="flex items-center justify-center mt-2">
-                      <Shield className="h-4 w-4 text-green-600 mr-1" />
-                      <span className="text-sm text-green-600 font-medium">Clean Sheet</span>
+                    <div className="flex items-center justify-center mt-1 sm:mt-2">
+                      <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 mr-1" />
+                      <span className="text-[10px] sm:text-sm text-green-600 font-medium">Clean Sheet</span>
                     </div>
                   )}
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-500">VS</div>
+
+                {/* VS Separator */}
+                <div className="text-center flex-shrink-0">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-500">VS</div>
                 </div>
-                <div className="text-center flex-1">
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
+
+                {/* Team B */}
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-3xl sm:text-5xl font-bold text-gray-900 mb-1 sm:mb-2">
                     {(match as any).score_teamb || 0}
                   </div>
-                  <div className="text-lg font-medium text-gray-600">{details.teamBName || 'Team B'}</div>
+                  <div className="text-xs sm:text-lg font-medium text-gray-600 break-words px-1">{details.teamBName || 'Team B'}</div>
                   {details.clean_sheet_teamB && (
-                    <div className="flex items-center justify-center mt-2">
-                      <Shield className="h-4 w-4 text-green-600 mr-1" />
-                      <span className="text-sm text-green-600 font-medium">Clean Sheet</span>
+                    <div className="flex items-center justify-center mt-1 sm:mt-2">
+                      <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 mr-1" />
+                      <span className="text-[10px] sm:text-sm text-green-600 font-medium">Clean Sheet</span>
                     </div>
                   )}
                 </div>
@@ -327,9 +335,9 @@ export default function MatchDetailsPage() {
               {/* Goal Scorers */}
               {(details.goals.length > 0 || (details.own_goals && details.own_goals.length > 0)) && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between">
+                  <div className="flex flex-col sm:flex-row justify-between gap-6 sm:gap-0">
                     {/* Team A Goals */}
-                    <div className="flex-1 pr-4 text-center">
+                    <div className="flex-1 sm:pr-4 text-center">
                       {(() => {
                         const teamAGoals = details.goals.filter(goal => goal.team === 'A')
                         const groupedGoals = teamAGoals.reduce((acc, goal) => {
@@ -375,7 +383,7 @@ export default function MatchDetailsPage() {
                     </div>
 
                     {/* Team B Goals */}
-                    <div className="flex-1 pl-4 text-center">
+                    <div className="flex-1 sm:pl-4 text-center border-t sm:border-t-0 border-gray-200 pt-4 sm:pt-0">
                       {(() => {
                         const teamBGoals = details.goals.filter(goal => goal.team === 'B')
                         const groupedGoals = teamBGoals.reduce((acc, goal) => {
@@ -449,20 +457,20 @@ export default function MatchDetailsPage() {
                     return (
                       <div
                         key={index}
-                        className={`flex items-center justify-between p-3 rounded-lg ${
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg ${
                           isOwnGoal ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                        <div className="flex items-center space-x-3 flex-1">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold flex-shrink-0 ${
                             isOwnGoal
                               ? 'bg-orange-100 text-orange-800'
                               : 'bg-green-100 text-green-800'
                           }`}>
                             {event.minute}'
                           </div>
-                          <div>
-                            <div className={`font-medium ${isOwnGoal ? 'text-orange-900' : 'text-gray-900'}`}>
+                          <div className="min-w-0 flex-1">
+                            <div className={`font-medium text-sm sm:text-base ${isOwnGoal ? 'text-orange-900' : 'text-gray-900'} break-words`}>
                               {event.scorer}
                               {isOwnGoal ? (
                                 <span className="ml-2 text-orange-600 font-semibold">— OG</span>
@@ -471,21 +479,21 @@ export default function MatchDetailsPage() {
                               )}
                             </div>
                             {!isOwnGoal && event.assist && (
-                              <div className="text-sm text-gray-600">Assist: {event.assist}</div>
+                              <div className="text-xs sm:text-sm text-gray-600">Assist: {event.assist}</div>
                             )}
                             {isOwnGoal && (
-                              <div className="text-sm text-orange-600">
+                              <div className="text-xs sm:text-sm text-orange-600">
                                 Own goal by {event.scorer}
                               </div>
                             )}
                           </div>
                         </div>
-                        <Badge className={
+                        <Badge className={`flex-shrink-0 ${
                           event.team === 'A'
                             ? 'bg-blue-100 text-blue-800'
                             : 'bg-red-100 text-red-800'
-                        }>
-                          {event.team === 'A' ? details.teamAName : details.teamBName}
+                        }`}>
+                          <span className="text-xs sm:text-sm break-words">{event.team === 'A' ? details.teamAName : details.teamBName}</span>
                         </Badge>
                       </div>
                     )
@@ -510,21 +518,21 @@ export default function MatchDetailsPage() {
                 {details.cards
                   .sort((a, b) => a.minute - b.minute)
                   .map((card, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
+                    <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold flex-shrink-0">
                           {card.minute}'
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{card.player}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-sm sm:text-base text-gray-900 break-words">{card.player}</div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={card.type === 'yellow' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        <Badge className={`text-xs sm:text-sm ${card.type === 'yellow' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
                           {card.type.toUpperCase()}
                         </Badge>
-                        <Badge className={card.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}>
-                          {card.team === 'A' ? details.teamAName : details.teamBName}
+                        <Badge className={`text-xs sm:text-sm ${card.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                          <span className="break-words">{card.team === 'A' ? details.teamAName : details.teamBName}</span>
                         </Badge>
                       </div>
                     </div>
@@ -548,25 +556,25 @@ export default function MatchDetailsPage() {
                 {details.substitutions
                   .sort((a, b) => a.minute - b.minute)
                   .map((sub, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
+                    <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold flex-shrink-0">
                           {sub.minute}'
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="flex items-center">
-                            <UserX className="h-4 w-4 text-red-500 mr-1" />
-                            <span className="text-sm text-gray-600">{sub.playerOut}</span>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 min-w-0 flex-1">
+                          <div className="flex items-center min-w-0">
+                            <UserX className="h-4 w-4 text-red-500 mr-1 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm text-gray-600 break-words">{sub.playerOut}</span>
                           </div>
-                          <div className="text-gray-400">→</div>
-                          <div className="flex items-center">
-                            <UserCheck className="h-4 w-4 text-green-500 mr-1" />
-                            <span className="text-sm text-gray-600">{sub.playerIn}</span>
+                          <div className="text-gray-400 hidden sm:inline">→</div>
+                          <div className="flex items-center min-w-0">
+                            <UserCheck className="h-4 w-4 text-green-500 mr-1 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm text-gray-600 break-words">{sub.playerIn}</span>
                           </div>
                         </div>
                       </div>
-                      <Badge className={sub.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}>
-                        {sub.team === 'A' ? details.teamAName : details.teamBName}
+                      <Badge className={`flex-shrink-0 text-xs sm:text-sm ${sub.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                        <span className="break-words">{sub.team === 'A' ? details.teamAName : details.teamBName}</span>
                       </Badge>
                     </div>
                   ))}

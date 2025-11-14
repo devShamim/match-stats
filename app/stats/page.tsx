@@ -3,23 +3,27 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tooltip } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown, Clock, MapPin, Zap, Star, Shield, Save } from 'lucide-react'
+import { Trophy, Target, Award, Users, Calendar, TrendingUp, Eye, Crown, Clock, MapPin, Zap, Star, Shield, Save, Info } from 'lucide-react'
 import Link from 'next/link'
 
 interface PlayerStats {
   player_id: string
   player_name: string
   player_photo?: string
+  player_position?: string | null
   total_goals: number
   total_assists: number
+  total_own_goals?: number
   total_yellow_cards: number
   total_red_cards: number
   total_clean_sheets: number
   total_saves: number
   total_minutes: number
   matches_played: number
+  unified_score?: number
 }
 
 interface StatsData {
@@ -133,6 +137,18 @@ export default function PublicStatsView() {
     if (scoreA > scoreB) return 'teamA'
     if (scoreB > scoreA) return 'teamB'
     return 'draw'
+  }
+
+  const getTeamResult = (match: any, team: 'A' | 'B') => {
+    const scoreA = match.score_teama || 0
+    const scoreB = match.score_teamb || 0
+
+    if (scoreA === scoreB) return 'Draw'
+    if (team === 'A') {
+      return scoreA > scoreB ? 'Won' : 'Lost'
+    } else {
+      return scoreB > scoreA ? 'Won' : 'Lost'
+    }
   }
 
   const handleViewDetails = (match: any) => {
@@ -376,6 +392,84 @@ export default function PublicStatsView() {
             <p className="text-gray-600">Top performers across different categories</p>
           </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Top Performers */}
+          <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between text-lg">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mr-3">
+                      <TrendingUp className="h-5 w-5 text-white" />
+                    </div>
+                    Top Performers
+                  </div>
+                  <Tooltip content="Unified scoring: Goals (3pts), Assists (2pts), Saves (0.5pts), Clean Sheets (2pts), Own Goals (-2pts)">
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
+                  </Tooltip>
+                </CardTitle>
+                <CardDescription className="text-sm">Top performers across categories</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {stats.leaderboards.top_performers.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.leaderboards.top_performers.map((player, index) => {
+                      const parts = []
+                      if (player.total_goals > 0) parts.push(`${player.total_goals}G`)
+                      if (player.total_assists > 0) parts.push(`${player.total_assists}A`)
+                      if (player.total_saves > 0) parts.push(`${player.total_saves}Sv`)
+                      if (player.total_clean_sheets > 0) parts.push(`${player.total_clean_sheets}CS`)
+                      if (player.total_own_goals && player.total_own_goals > 0) parts.push(`${player.total_own_goals}OG`)
+                      const breakdown = parts.length > 0 ? parts.join(' ') : '0 pts'
+
+                      return (
+                        <div key={player.player_id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors duration-200 rounded-lg">
+                          <div className="flex items-center">
+                            {index < 5 ? (
+                              <div className={`flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs mr-3 shadow-lg ${
+                                index === 0 ? 'bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-500 text-yellow-800 border-2 border-yellow-400 ring-2 ring-yellow-200' :
+                                index === 1 ? 'bg-gradient-to-br from-gray-200 via-gray-300 to-gray-500 text-gray-800 border-2 border-gray-400 ring-2 ring-gray-200' :
+                                index === 2 ? 'bg-gradient-to-br from-orange-200 via-orange-300 to-orange-500 text-orange-800 border-2 border-orange-400 ring-2 ring-orange-200' :
+                                'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-300 text-gray-600 border-2 border-gray-200 ring-2 ring-gray-50'
+                              }`}>
+                                {index + 1}
+                              </div>
+                            ) : (
+                              <span className="text-sm font-medium text-gray-500 mr-3 w-6 text-center">
+                                {index + 1}.
+                              </span>
+                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Link href={`/player/${player.player_id}`} className="hover:text-blue-600 transition-colors">
+                                  <p className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer">{player.player_name}</p>
+                                </Link>
+                                {player.player_position && (
+                                  <Badge variant="outline" className="text-[9px] px-2 py-0.5 bg-gray-100 text-gray-700 border-gray-300 font-normal">
+                                    {player.player_position}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500">{player.matches_played} matches</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-gray-900">{player.unified_score || 0}</p>
+                            <p className="text-xs text-gray-500">{breakdown}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+              </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <TrendingUp className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">No performers yet</p>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+
           {/* Top Scorers */}
             <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
@@ -487,62 +581,6 @@ export default function PublicStatsView() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Top Performers */}
-            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center text-lg">
-                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mr-3">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  Top Performers
-                </CardTitle>
-                <CardDescription className="text-sm">Goals + assists combined</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {stats.leaderboards.top_performers.length > 0 ? (
-                  <div className="space-y-3">
-                    {stats.leaderboards.top_performers.map((player, index) => (
-                      <div key={player.player_id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors duration-200 rounded-lg">
-                        <div className="flex items-center">
-                          {index < 5 ? (
-                            <div className={`flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs mr-3 shadow-lg ${
-                              index === 0 ? 'bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-500 text-yellow-800 border-2 border-yellow-400 ring-2 ring-yellow-200' :
-                              index === 1 ? 'bg-gradient-to-br from-gray-200 via-gray-300 to-gray-500 text-gray-800 border-2 border-gray-400 ring-2 ring-gray-200' :
-                              index === 2 ? 'bg-gradient-to-br from-orange-200 via-orange-300 to-orange-500 text-orange-800 border-2 border-orange-400 ring-2 ring-orange-200' :
-                              'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-300 text-gray-600 border-2 border-gray-200 ring-2 ring-gray-50'
-                            }`}>
-                              {index + 1}
-                            </div>
-                          ) : (
-                            <span className="text-sm font-medium text-gray-500 mr-3 w-6 text-center">
-                              {index + 1}.
-                            </span>
-                          )}
-                          <div>
-                            <Link href={`/player/${player.player_id}`} className="hover:text-blue-600 transition-colors">
-                              <p className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer">{player.player_name}</p>
-                            </Link>
-                            <p className="text-xs text-gray-500">{player.matches_played} matches</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-gray-900">{player.total_goals + player.total_assists}</p>
-                          <p className="text-xs text-gray-500">{player.total_goals}G {player.total_assists}A</p>
-                        </div>
-                      </div>
-                    ))}
-              </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <TrendingUp className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <p className="text-gray-500 text-sm">No performers yet</p>
-                  </div>
-                )}
-            </CardContent>
-          </Card>
           </div>
 
           {/* Additional Leaderboards Row */}
@@ -669,7 +707,7 @@ export default function PublicStatsView() {
           </div>
           <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center">
                   <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mr-3">
                     <Calendar className="h-5 w-5 text-white" />
@@ -679,10 +717,11 @@ export default function PublicStatsView() {
                     <CardDescription className="text-sm">Latest match results</CardDescription>
                   </div>
                 </div>
-                <Link href="/matches">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2 border-2 border-gray-300 hover:border-green-600 text-gray-700 hover:text-green-600 transition-all duration-300">
+                <Link href="/matches" className="w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto flex items-center justify-center gap-2 border-2 border-gray-300 hover:border-green-600 text-gray-700 hover:text-green-600 transition-all duration-300">
                     <Eye className="h-4 w-4" />
-                    View All Matches
+                    <span className="hidden sm:inline">View All Matches</span>
+                    <span className="sm:hidden">View All</span>
                   </Button>
                 </Link>
               </div>
@@ -690,8 +729,8 @@ export default function PublicStatsView() {
             <CardContent>
             {stats.recent_matches.length > 0 ? (
               <div className="space-y-4">
-                {/* Column Headers */}
-                <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-100 rounded-lg font-medium text-gray-700 text-sm">
+                {/* Column Headers - Desktop Only */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 bg-gray-100 rounded-lg font-medium text-gray-700 text-sm">
                   <div className="col-span-2">Date</div>
                   <div className="col-span-3">Team A</div>
                   <div className="col-span-2 text-center">Score</div>
@@ -703,54 +742,134 @@ export default function PublicStatsView() {
                 {stats.recent_matches.map((match) => {
                   const winner = getMatchWinner(match)
                   return (
-                    <div key={match.id} className="grid grid-cols-12 gap-4 items-center p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:from-green-50 hover:to-emerald-50 transition-all duration-300 border border-gray-200 hover:border-green-200">
-                      {/* Date Column */}
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-gray-700">{formatDate(match.date)}</p>
-                        <Badge className={`mt-2 text-xs font-medium ${getStatusColor(match.status)}`}>
-                          {match.status}
-                        </Badge>
-                      </div>
-
-                      {/* Team A Column */}
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900">{match.teamA_name || 'Team A'}</p>
-                          {winner === 'teamA' && (
-                            <Crown className="h-4 w-4 text-yellow-500" />
-                          )}
+                    <div key={match.id}>
+                      {/* Desktop View - Grid Layout */}
+                      <div className="hidden md:grid grid-cols-12 gap-4 items-center p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:from-green-50 hover:to-emerald-50 transition-all duration-300 border border-gray-200 hover:border-green-200">
+                        {/* Date Column */}
+                        <div className="col-span-2">
+                          <p className="text-sm font-medium text-gray-700">{formatDate(match.date)}</p>
+                          <Badge className={`mt-2 text-xs font-medium ${getStatusColor(match.status)}`}>
+                            {match.status}
+                          </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 font-medium">{match.type}</p>
-                      </div>
 
-                      {/* Score Column */}
-                      <div className="col-span-2 text-center">
-                        <div className="text-3xl font-bold text-gray-900">
-                          {match.score_teama || 0} - {match.score_teamb || 0}
+                        {/* Team A Column */}
+                        <div className="col-span-3">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{match.teamA_name || 'Team A'}</p>
+                            {winner === 'teamA' && (
+                              <Crown className="h-4 w-4 text-yellow-500" />
+                            )}
+                          </div>
+                          <p className={`text-sm font-medium ${
+                            winner === 'teamA' ? 'text-green-600' :
+                            winner === 'teamB' ? 'text-red-600' :
+                            'text-gray-600'
+                          }`}>
+                            {getTeamResult(match, 'A')}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-500 font-medium">Final Score</p>
+
+                        {/* Score Column */}
+                        <div className="col-span-2 text-center">
+                          <div className="text-3xl font-bold text-gray-900">
+                            {match.score_teama || 0} - {match.score_teamb || 0}
+                          </div>
+                          <p className="text-sm text-gray-500 font-medium">Final Score</p>
+                        </div>
+
+                        {/* Team B Column */}
+                        <div className="col-span-3">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{match.teamB_name || 'Team B'}</p>
+                            {winner === 'teamB' && (
+                              <Crown className="h-4 w-4 text-yellow-500" />
+                            )}
+                          </div>
+                          <p className={`text-sm font-medium ${
+                            winner === 'teamB' ? 'text-green-600' :
+                            winner === 'teamA' ? 'text-red-600' :
+                            'text-gray-600'
+                          }`}>
+                            {getTeamResult(match, 'B')}
+                          </p>
+                        </div>
+
+                        {/* Actions Column */}
+                        <div className="col-span-2 text-center">
+                          <Button
+                            onClick={() => handleViewDetails(match)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 border-2 border-gray-300 hover:border-green-600 text-gray-700 hover:text-green-600 transition-all duration-300"
+                          >
+                            <Eye className="h-4 w-4" />
+                            See Details
+                          </Button>
+                        </div>
                       </div>
 
-                      {/* Team B Column */}
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900">{match.teamB_name || 'Team B'}</p>
-                          {winner === 'teamB' && (
-                            <Crown className="h-4 w-4 text-yellow-500" />
-                          )}
-                    </div>
-                        <p className="text-sm text-gray-600 font-medium">
-                          {match.opponent || 'Internal Match'}
-                        </p>
-                      </div>
+                      {/* Mobile View - Card Layout */}
+                      <div className="md:hidden p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:border-green-200 transition-all duration-300">
+                        {/* Date and Status */}
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-medium text-gray-700">{formatDate(match.date)}</p>
+                          <Badge className={`text-xs font-medium ${getStatusColor(match.status)}`}>
+                            {match.status}
+                          </Badge>
+                        </div>
 
-                      {/* Actions Column */}
-                      <div className="col-span-2 text-center">
+                        {/* Score - Prominent on Mobile */}
+                        <div className="text-center mb-4 py-3 bg-white rounded-lg">
+                          <div className="text-2xl font-bold text-gray-900 mb-1">
+                            {match.score_teama || 0} - {match.score_teamb || 0}
+                          </div>
+                          <p className="text-xs text-gray-500">Final Score</p>
+                        </div>
+
+                        {/* Teams */}
+                        <div className="space-y-2 mb-4">
+                          {/* Team A */}
+                          <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-gray-900 text-sm">{match.teamA_name || 'Team A'}</p>
+                              {winner === 'teamA' && (
+                                <Crown className="h-3 w-3 text-yellow-500" />
+                              )}
+                            </div>
+                            <p className={`text-xs font-medium ${
+                              winner === 'teamA' ? 'text-green-600' :
+                              winner === 'teamB' ? 'text-red-600' :
+                              'text-gray-600'
+                            }`}>
+                              {getTeamResult(match, 'A')}
+                            </p>
+                          </div>
+
+                          {/* Team B */}
+                          <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-gray-900 text-sm">{match.teamB_name || 'Team B'}</p>
+                              {winner === 'teamB' && (
+                                <Crown className="h-3 w-3 text-yellow-500" />
+                              )}
+                            </div>
+                            <p className={`text-xs font-medium ${
+                              winner === 'teamB' ? 'text-green-600' :
+                              winner === 'teamA' ? 'text-red-600' :
+                              'text-gray-600'
+                            }`}>
+                              {getTeamResult(match, 'B')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
                         <Button
                           onClick={() => handleViewDetails(match)}
                           variant="outline"
                           size="sm"
-                          className="flex items-center gap-2 border-2 border-gray-300 hover:border-green-600 text-gray-700 hover:text-green-600 transition-all duration-300"
+                          className="w-full flex items-center justify-center gap-2 border-2 border-gray-300 hover:border-green-600 text-gray-700 hover:text-green-600 transition-all duration-300"
                         >
                           <Eye className="h-4 w-4" />
                           See Details

@@ -404,88 +404,93 @@ export default function PlayerStatsPage() {
         {/* Recent Matches */}
         <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center text-lg">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mr-3">
-                <Calendar className="h-5 w-5 text-white" />
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               Recent Matches
             </CardTitle>
-            <CardDescription className="text-sm">Last 5 matches performance</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">Last 5 matches performance</CardDescription>
           </CardHeader>
           <CardContent>
             {stats.recent_matches.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {stats.recent_matches.map((match, index) => {
                   const winner = getMatchWinner(match)
                   return (
-                    <div key={index} className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:from-green-50 hover:to-emerald-50 transition-all duration-300 border border-gray-200 hover:border-green-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900">{match.teamA_name || 'Team A'}</p>
+                    <div key={index} className="p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:from-green-50 hover:to-emerald-50 transition-all duration-300 border border-gray-200 hover:border-green-200">
+                      {/* Date and Teams - Mobile: Stacked, Desktop: Row */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
+                        {/* Teams */}
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <p className="font-semibold text-gray-900 text-sm sm:text-base">{match.teamA_name || 'Team A'}</p>
                             {winner === 'teamA' && (
-                              <Crown className="h-4 w-4 text-yellow-500" />
+                              <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 flex-shrink-0" />
                             )}
                           </div>
-                          <span className="text-gray-400">vs</span>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900">{match.teamB_name || 'Team B'}</p>
+                          <span className="text-gray-400 text-xs sm:text-sm">vs</span>
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <p className="font-semibold text-gray-900 text-sm sm:text-base">{match.teamB_name || 'Team B'}</p>
                             {winner === 'teamB' && (
-                              <Crown className="h-4 w-4 text-yellow-500" />
+                              <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 flex-shrink-0" />
                             )}
                           </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-600">{formatDate(match.date)}</p>
+                        {/* Date */}
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">{formatDate(match.date)}</p>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-6">
+                      {/* Statistics - Mobile: Wrapped Grid, Desktop: Row */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 sm:space-x-0">
                           {match.goals > 0 && (
                             <div className="flex items-center text-yellow-600">
-                              <Trophy className="h-4 w-4 mr-2" />
-                              <span className="font-medium">{match.goals} goal{match.goals !== 1 ? 's' : ''}</span>
+                              <Trophy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.goals} goal{match.goals !== 1 ? 's' : ''}</span>
                             </div>
                           )}
                           {match.assists > 0 && (
                             <div className="flex items-center text-blue-600">
-                              <Award className="h-4 w-4 mr-2" />
-                              <span className="font-medium">{match.assists} assist{match.assists !== 1 ? 's' : ''}</span>
+                              <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.assists} assist{match.assists !== 1 ? 's' : ''}</span>
                             </div>
                           )}
                           {(match.own_goals || 0) > 0 && (
                             <div className="flex items-center text-orange-600">
-                              <Target className="h-4 w-4 mr-2 rotate-180" />
-                              <span className="font-medium">{match.own_goals} own goal{(match.own_goals || 0) !== 1 ? 's' : ''}</span>
+                              <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 rotate-180 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.own_goals} own goal{(match.own_goals || 0) !== 1 ? 's' : ''}</span>
                             </div>
                           )}
                           {match.yellow_cards > 0 && (
                             <div className="flex items-center text-yellow-600">
-                              <Target className="h-4 w-4 mr-2" />
-                              <span className="font-medium">{match.yellow_cards} yellow</span>
+                              <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.yellow_cards} yellow</span>
                             </div>
                           )}
                           {match.red_cards > 0 && (
                             <div className="flex items-center text-red-600">
-                              <Target className="h-4 w-4 mr-2" />
-                              <span className="font-medium">{match.red_cards} red</span>
+                              <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.red_cards} red</span>
                             </div>
                           )}
                           {match.clean_sheets > 0 && (
                             <div className="flex items-center text-blue-600">
-                              <Shield className="h-4 w-4 mr-2" />
-                              <span className="font-medium">Clean sheet</span>
+                              <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">Clean sheet</span>
                             </div>
                           )}
                           {match.saves > 0 && (
                             <div className="flex items-center text-purple-600">
-                              <Save className="h-4 w-4 mr-2" />
-                              <span className="font-medium">{match.saves} save{match.saves !== 1 ? 's' : ''}</span>
+                              <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.saves} save{match.saves !== 1 ? 's' : ''}</span>
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center text-gray-600">
-                          <Clock className="h-4 w-4 mr-2" />
-                          <span className="font-medium">{match.minutes_played} min</span>
+                        {/* Minutes Played */}
+                        <div className="flex items-center text-gray-600 border-t sm:border-t-0 pt-2 sm:pt-0">
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                          <span className="font-medium text-xs sm:text-sm">{match.minutes_played} min</span>
                         </div>
                       </div>
                     </div>

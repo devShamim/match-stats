@@ -133,12 +133,34 @@ export async function GET() {
       delete playerStats.unique_matches // Clean up
     })
 
-    // Calculate per-match ratios
+    // Calculate per-match ratios and unified scores
     playerStatsMap.forEach(playerStats => {
       if (playerStats.matches_played > 0) {
         // Goals per match excludes own goals (own goals are negative)
         playerStats.goals_per_match = Number((playerStats.goals / playerStats.matches_played).toFixed(2))
         playerStats.assists_per_match = Number((playerStats.assists / playerStats.matches_played).toFixed(2))
+      }
+
+      // Calculate Unified Score
+      // Goals: 3 points, Assists: 2 points, Saves: 0.5 points, Clean Sheets: 2 points, Own Goals: -2 points
+      // Future: Match Rating (average × 2) - will be added when match ratings are implemented
+      const goalsPoints = playerStats.goals * 3
+      const assistsPoints = playerStats.assists * 2
+      const savesPoints = playerStats.saves * 0.5
+      const cleanSheetsPoints = playerStats.clean_sheets * 2
+      const ownGoalsPenalty = playerStats.own_goals * 2 // Negative points
+      // const matchRatingPoints = 0 // Will be: (average_rating × 2) when implemented
+
+      playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty) * 10) / 10
+
+      // Store breakdown for display
+      playerStats.score_breakdown = {
+        goals: goalsPoints,
+        assists: assistsPoints,
+        saves: savesPoints,
+        clean_sheets: cleanSheetsPoints,
+        own_goals: -ownGoalsPenalty,
+        // match_rating: 0 // Will be added when implemented
       }
     })
 
@@ -169,14 +191,11 @@ export async function GET() {
       .sort((a, b) => b.goals_per_match - a.goals_per_match)
       .slice(0, 10)
 
-    // Top Performers (combined goals + assists - own_goals as negative metric)
+    // Top Performers (Unified Scoring System)
+    // Includes: Goals (3pts), Assists (2pts), Saves (0.5pts), Clean Sheets (2pts), Own Goals (-2pts)
     const topPerformers = allPlayerStats
-      .filter(player => (player.goals + player.assists - player.own_goals) > 0)
-      .sort((a, b) => {
-        const scoreA = a.goals + a.assists - a.own_goals
-        const scoreB = b.goals + b.assists - b.own_goals
-        return scoreB - scoreA
-      })
+      .filter(player => player.unified_score > 0)
+      .sort((a, b) => b.unified_score - a.unified_score)
       .slice(0, 10)
 
     // Most Minutes Played

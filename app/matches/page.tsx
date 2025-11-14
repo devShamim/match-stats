@@ -219,69 +219,72 @@ export default function MatchesPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/3 to-transparent transform -skew-x-12"></div>
         </div>
 
-        <div className="relative px-6 py-16">
-          <div className="flex justify-between items-center">
-            <div className="flex-1">
-              <div className="flex items-center mb-6">
-                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mr-4">
-                  <Calendar className="h-4 w-4 text-pink-300 mr-2" />
-                  <span className="text-white font-medium text-sm">Total Matches</span>
+        <div className="relative px-4 sm:px-6 py-8 sm:py-16">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 lg:gap-0">
+            <div className="flex-1 w-full">
+              {/* Badges - Mobile: Stacked, Desktop: Row */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-pink-300 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span className="text-white font-medium text-xs sm:text-sm">Total Matches</span>
                 </div>
-                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-                  <Star className="h-4 w-4 text-pink-300 mr-2" />
-                  <span className="text-white font-medium text-sm">{filteredMatches.length} Matches</span>
+                <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2">
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 text-pink-300 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span className="text-white font-medium text-xs sm:text-sm">{filteredMatches.length} Matches</span>
                 </div>
               </div>
 
-              <h1 className="text-5xl font-bold text-white mb-4">
+              {/* Title and Description */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">
                 Matches
               </h1>
-              <p className="text-white/80 text-lg mb-8 max-w-2xl">
+              <p className="text-white/80 text-sm sm:text-base lg:text-lg mb-4 sm:mb-8 max-w-2xl">
                 Track game results and relive the excitement of every match
               </p>
 
               {/* Search Bar */}
-              <div className="max-w-lg">
+              <div className="max-w-lg w-full">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   <Input
-                    placeholder="Search matches by teams, location, or status..."
+                    placeholder="Search matches by teams..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 h-14 bg-white/95 backdrop-blur-sm border-0 rounded-2xl text-gray-900 placeholder-gray-500 focus:bg-white focus:ring-2 focus:ring-pink-400 text-lg"
+                    className="pl-10 sm:pl-12 h-12 sm:h-14 bg-white/95 backdrop-blur-sm border-0 rounded-xl sm:rounded-2xl text-gray-900 placeholder-gray-500 focus:bg-white focus:ring-2 focus:ring-pink-400 text-sm sm:text-base lg:text-lg"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 text-center">
-                <p className="text-white/70 text-sm mb-3 font-medium">Total Matches</p>
-                <div className="text-4xl font-bold text-white mb-3">
+            {/* Total Matches Card - Mobile: Below content, Desktop: Right side */}
+            <div className="text-center lg:text-right flex-shrink-0 w-full lg:w-auto">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center inline-block w-full sm:w-auto">
+                <p className="text-white/70 text-xs sm:text-sm mb-2 sm:mb-3 font-medium">Total Matches</p>
+                <div className="text-3xl sm:text-4xl font-bold text-white mb-2 sm:mb-3">
                   {filteredMatches.length}
                 </div>
-                <div className="w-20 h-1 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full mx-auto"></div>
+                <div className="w-16 sm:w-20 h-1 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full mx-auto"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Action Bar */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-4">
-            <Badge variant="outline" className="text-sm bg-white border-gray-200 text-gray-700 h-9 rounded-lg">
-              <Calendar className="h-4 w-4 mr-1" />
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <Badge variant="outline" className="text-xs sm:text-sm bg-white border-gray-200 text-gray-700 h-8 sm:h-9 rounded-lg w-full sm:w-auto justify-center sm:justify-start">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               {filteredMatches.length} match{filteredMatches.length !== 1 ? 'es' : ''}
             </Badge>
 
             {/* Filters */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="flex h-9 rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+                className="flex-1 sm:flex-initial h-8 sm:h-9 rounded-lg border border-gray-200 bg-white px-2 sm:px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
               >
                 <option value="all">All Status</option>
                 <option value="scheduled">Scheduled</option>
@@ -292,7 +295,7 @@ export default function MatchesPage() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="flex h-9 rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+                className="flex-1 sm:flex-initial h-8 sm:h-9 rounded-lg border border-gray-200 bg-white px-2 sm:px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
               >
                 <option value="all">All Types</option>
                 <option value="internal">Internal</option>
@@ -302,8 +305,8 @@ export default function MatchesPage() {
           </div>
 
           {isAdmin && (
-            <Button asChild className="bg-pink-600 hover:bg-pink-700 text-white">
-              <Link href="/admin/create-match">
+            <Button asChild className="bg-pink-600 hover:bg-pink-700 text-white w-full sm:w-auto">
+              <Link href="/admin/create-match" className="flex items-center justify-center">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Match
               </Link>
