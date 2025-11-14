@@ -64,6 +64,7 @@ export interface Stat {
   yellow_cards: number
   red_cards: number
   minutes_played: number
+  own_goals: number
   created_at: string
   updated_at: string
 }
@@ -74,6 +75,7 @@ export interface PlayerStats {
   total_assists: number
   total_yellow_cards: number
   total_red_cards: number
+  total_own_goals: number
   matches_played: number
   total_minutes: number
 }
@@ -89,6 +91,15 @@ export interface MatchWithDetails extends Match {
     yellow_cards: number
     red_cards: number
     minutes_played: number
+    own_goals: number
+  }>
+  own_goals?: Array<{
+    id?: string
+    player_id: string
+    player_name: string
+    minute: number
+    team: 'A' | 'B'
+    opponent_team: 'A' | 'B'
   }>
 }
 

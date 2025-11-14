@@ -54,6 +54,7 @@ export async function GET(
 
     // Organize events by type
     const goals = events?.filter(e => e.event_type === 'goal') || []
+    const ownGoals = events?.filter(e => e.event_type === 'own_goal') || []
     const cards = events?.filter(e => e.event_type === 'card') || []
     const substitutions = events?.filter(e => e.event_type === 'substitution') || []
     const saves = events?.filter(e => e.event_type === 'save') || []
@@ -101,14 +102,34 @@ export async function GET(
     }
 
 
+    // Get player IDs for own goals
+    const ownGoalsWithPlayerIds = ownGoals.map((og: any) => {
+      // Find the player that matches the scorer name from match_players
+      const allPlayers = match.match_players || []
+      const player = allPlayers.find((mp: any) =>
+        mp.player?.user_profile?.name === og.scorer
+      )
+
+      return {
+        id: og.id,
+        player_id: player?.player?.id || null,
+        player_name: og.scorer,
+        minute: og.minute,
+        team: og.team, // Team that gets the goal (opponent team)
+        opponent_team: og.team === 'A' ? 'B' : 'A' // Team of the player who scored OG
+      }
+    })
+
     const details = {
       goals: goals.map(goal => ({
         id: goal.id,
         minute: goal.minute,
         scorer: goal.scorer,
         assist: goal.assist,
-        team: goal.team
+        team: goal.team,
+        goal_type: goal.goal_type || 'normal'
       })),
+      own_goals: ownGoalsWithPlayerIds,
       cards: cards.map(card => ({
         id: card.id,
         minute: card.minute,

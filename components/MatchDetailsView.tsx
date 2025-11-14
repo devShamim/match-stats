@@ -54,6 +54,14 @@ interface MatchStats {
 
 interface MatchDetails {
   goals: Goal[]
+  own_goals?: Array<{
+    id?: string
+    player_id: string
+    player_name: string
+    minute: number
+    team: 'A' | 'B'
+    opponent_team: 'A' | 'B'
+  }>
   cards: Card[]
   substitutions: Substitution[]
   stats: MatchStats
@@ -110,6 +118,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
             ...data.details,
             // Ensure we have default values if some are missing
             goals: data.details.goals || [],
+            own_goals: data.details.own_goals || [],
             cards: data.details.cards || [],
             substitutions: data.details.substitutions || [],
             stats: data.details.stats || prev.stats,
@@ -247,7 +256,7 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
             </div>
 
             {/* Goal Scorers */}
-            {details.goals.length > 0 && (
+            {(details.goals.length > 0 || (details.own_goals && details.own_goals.length > 0)) && (
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between">
                   {/* Team A Goals */}
@@ -262,18 +271,36 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                         return acc
                       }, {} as Record<string, number[]>)
 
-                      return Object.keys(groupedGoals).length > 0 ? (
-                        Object.entries(groupedGoals)
-                          .sort((a, b) => Math.min(...a[1]) - Math.min(...b[1]))
-                          .map(([scorer, minutes]) => (
-                            <div key={scorer} className="py-1">
-                              <span className="text-sm text-gray-700">
-                                {scorer} ({minutes.sort((a, b) => a - b).join("', ")}')
-                              </span>
+                      const teamAOwnGoals = details.own_goals?.filter(og => og.team === 'A') || []
+
+                      return (
+                        <>
+                          {Object.keys(groupedGoals).length > 0 ? (
+                            Object.entries(groupedGoals)
+                              .sort((a, b) => Math.min(...a[1]) - Math.min(...b[1]))
+                              .map(([scorer, minutes]) => (
+                                <div key={scorer} className="py-1">
+                                  <span className="text-sm text-gray-700">
+                                    {scorer} ({minutes.sort((a, b) => a - b).join("', ")}')
+                                  </span>
+                                </div>
+                              ))
+                          ) : (
+                            <div className="text-sm text-gray-500 italic">No goals</div>
+                          )}
+                          {/* Own Goals for Team A (scored by Team B players) */}
+                          {teamAOwnGoals.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-orange-200">
+                              {teamAOwnGoals.map((og) => (
+                                <div key={og.id || og.player_id} className="py-1">
+                                  <span className="text-sm text-orange-600 font-medium">
+                                    {og.player_name} — OG ({og.minute}')
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          ))
-                      ) : (
-                        <div className="text-sm text-gray-500 italic">No goals</div>
+                          )}
+                        </>
                       )
                     })()}
                   </div>
@@ -290,18 +317,36 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                         return acc
                       }, {} as Record<string, number[]>)
 
-                      return Object.keys(groupedGoals).length > 0 ? (
-                        Object.entries(groupedGoals)
-                          .sort((a, b) => Math.min(...a[1]) - Math.min(...b[1]))
-                          .map(([scorer, minutes]) => (
-                            <div key={scorer} className="py-1">
-                              <span className="text-sm text-gray-700">
-                                {scorer} ({minutes.sort((a, b) => a - b).join("', ")}')
-                              </span>
+                      const teamBOwnGoals = details.own_goals?.filter(og => og.team === 'B') || []
+
+                      return (
+                        <>
+                          {Object.keys(groupedGoals).length > 0 ? (
+                            Object.entries(groupedGoals)
+                              .sort((a, b) => Math.min(...a[1]) - Math.min(...b[1]))
+                              .map(([scorer, minutes]) => (
+                                <div key={scorer} className="py-1">
+                                  <span className="text-sm text-gray-700">
+                                    {scorer} ({minutes.sort((a, b) => a - b).join("', ")}')
+                                  </span>
+                                </div>
+                              ))
+                          ) : (
+                            <div className="text-sm text-gray-500 italic">No goals</div>
+                          )}
+                          {/* Own Goals for Team B (scored by Team A players) */}
+                          {teamBOwnGoals.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-orange-200">
+                              {teamBOwnGoals.map((og) => (
+                                <div key={og.id || og.player_id} className="py-1">
+                                  <span className="text-sm text-orange-600 font-medium">
+                                    {og.player_name} — OG ({og.minute}')
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          ))
-                      ) : (
-                        <div className="text-sm text-gray-500 italic">No goals</div>
+                          )}
+                        </>
                       )
                     })()}
                   </div>
@@ -311,42 +356,74 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
           </div>
 
           {/* Goals Section */}
-          {details.goals.length > 0 && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Target className="h-5 w-5 mr-2 text-green-600" />
-                  Timeline ({details.goals.length} goals)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {details.goals
-                    .sort((a, b) => a.minute - b.minute)
-                    .map((goal, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-8 h-8 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-                          {goal.minute}'
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {goal.scorer} {goal.assist && `(${goal.assist})`}
+          {(() => {
+            const totalGoals = details.goals.length + (details.own_goals?.length || 0)
+            const allEvents = [
+              ...details.goals.map(g => ({ ...g, type: 'goal' as const })),
+              ...(details.own_goals || []).map(og => ({ ...og, type: 'own_goal' as const, scorer: og.player_name }))
+            ].sort((a, b) => a.minute - b.minute)
+
+            return totalGoals > 0 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Target className="h-5 w-5 mr-2 text-green-600" />
+                    Timeline ({totalGoals} {totalGoals === 1 ? 'goal' : 'goals'})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {allEvents.map((event, index) => {
+                      const isOwnGoal = event.type === 'own_goal'
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-center justify-between p-3 rounded-lg ${
+                            isOwnGoal ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                              isOwnGoal
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {event.minute}'
+                            </div>
+                            <div>
+                              <div className={`font-medium ${isOwnGoal ? 'text-orange-900' : 'text-gray-900'}`}>
+                                {event.scorer}
+                                {isOwnGoal ? (
+                                  <span className="ml-2 text-orange-600 font-semibold">— OG</span>
+                                ) : (
+                                  event.assist && ` (${event.assist})`
+                                )}
+                              </div>
+                              {!isOwnGoal && event.assist && (
+                                <div className="text-sm text-gray-600">Assist: {event.assist}</div>
+                              )}
+                              {isOwnGoal && (
+                                <div className="text-sm text-orange-600">
+                                  Own goal by {event.scorer}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          {goal.assist && (
-                            <div className="text-sm text-gray-600">Assist: {goal.assist}</div>
-                          )}
+                          <Badge className={
+                            event.team === 'A'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-red-100 text-red-800'
+                          }>
+                            {event.team === 'A' ? details.teamAName : details.teamBName}
+                          </Badge>
                         </div>
-                      </div>
-                      <Badge className={goal.team === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}>
-                        {goal.team === 'A' ? details.teamAName : details.teamBName}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })()}
 
           {/* Cards Section */}
           {details.cards.length > 0 && (

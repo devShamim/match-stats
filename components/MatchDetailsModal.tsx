@@ -27,7 +27,9 @@ interface Goal {
   minute: number
   scorer: string
   assist?: string
-  team: 'A' | 'B'
+  team: 'A' | 'B' // Team that gets the goal (opponent team for own goals)
+  goal_type?: 'normal' | 'own_goal'
+  player_team?: 'A' | 'B' // Team of the player who scored (for own goals)
 }
 
 interface Card {
@@ -152,11 +154,30 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
         const data = await response.json()
 
         if (data.success && data.details) {
+          // Merge own goals into goals array for editing
+          const normalGoals = (data.details.goals || []).map((g: any) => ({
+            ...g,
+            goal_type: g.goal_type || 'normal',
+            player_team: g.goal_type === 'own_goal' ? (g.player_team || 'A') : undefined
+          }))
+
+          const ownGoals = (data.details.own_goals || []).map((og: any) => ({
+            id: og.id,
+            minute: og.minute,
+            scorer: og.player_name,
+            assist: undefined,
+            team: og.team, // Team that gets the goal (opponent team)
+            goal_type: 'own_goal' as const,
+            player_team: og.opponent_team // Team of the player who scored OG
+          }))
+
+          const allGoals = [...normalGoals, ...ownGoals]
+
           setDetails(prev => ({
             ...prev,
             ...data.details,
-            // Ensure we have default values if some are missing
-            goals: data.details.goals || [],
+            // Merge normal goals and own goals
+            goals: allGoals,
             cards: data.details.cards || [],
             substitutions: data.details.substitutions || [],
             saves: data.details.saves || [],
@@ -214,7 +235,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const addGoal = () => {
     setDetails(prev => ({
       ...prev,
-      goals: [...prev.goals, { minute: 0, scorer: '', team: 'A' }]
+      goals: [...prev.goals, { minute: 0, scorer: '', team: 'A', goal_type: 'normal', player_team: 'A' }]
     }))
   }
 
@@ -520,87 +541,154 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                 </Button>
               </div>
 
-              {details.goals.map((goal, index) => (
-                <Card key={index} className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Minute
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="120"
-                        value={goal.minute}
-                        onChange={(e) => updateGoal(index, 'minute', parseInt(e.target.value) || 0)}
-                      />
+              {details.goals.map((goal, index) => {
+                const isOwnGoal = goal.goal_type === 'own_goal'
+                const playerTeam = isOwnGoal ? (goal.player_team || 'A') : goal.team
+                return (
+                  <Card key={index} className={`p-4 ${isOwnGoal ? 'border-orange-300 bg-orange-50' : ''}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Minute
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="120"
+                          value={goal.minute}
+                          onChange={(e) => updateGoal(index, 'minute', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      {isOwnGoal && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Player Team
+                          </label>
+                          <select
+                            value={playerTeam}
+                            onChange={(e) => {
+                              updateGoal(index, 'player_team', e.target.value)
+                              // Clear scorer when team changes
+                              updateGoal(index, 'scorer', '')
+                            }}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          >
+                            <option value="A">{details.teamAName || 'Team A'}</option>
+                            <option value="B">{details.teamBName || 'Team B'}</option>
+                          </select>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {isOwnGoal ? 'Player (OG)' : 'Scorer'}
+                        </label>
+                        <select
+                          value={goal.scorer}
+                          onChange={(e) => updateGoal(index, 'scorer', e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="">Select {isOwnGoal ? 'player' : 'scorer'}</option>
+                          {/* For own goal, show players from the selected player team */}
+                          {isOwnGoal
+                            ? (playerTeam === 'A'
+                                ? details.teamAPlayers?.map(player => (
+                                    <option key={player} value={player}>{player}</option>
+                                  ))
+                                : details.teamBPlayers?.map(player => (
+                                    <option key={player} value={player}>{player}</option>
+                                  ))
+                              )
+                            : (goal.team === 'A'
+                                ? details.teamAPlayers?.map(player => (
+                                    <option key={player} value={player}>{player}</option>
+                                  ))
+                                : details.teamBPlayers?.map(player => (
+                                    <option key={player} value={player}>{player}</option>
+                                  ))
+                              )
+                          }
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {isOwnGoal ? 'Opponent Team (Gets Goal)' : 'Team'}
+                        </label>
+                        <select
+                          value={goal.team}
+                          onChange={(e) => updateGoal(index, 'team', e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="A">{details.teamAName || 'Team A'}</option>
+                          <option value="B">{details.teamBName || 'Team B'}</option>
+                        </select>
+                        {isOwnGoal && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            Goal credited to {goal.team === 'A' ? (details.teamAName || 'Team A') : (details.teamBName || 'Team B')}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Assist
+                        </label>
+                        <select
+                          value={goal.assist || ''}
+                          onChange={(e) => updateGoal(index, 'assist', e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          disabled={isOwnGoal}
+                        >
+                          <option value="">Select assist provider</option>
+                          {goal.team === 'A'
+                            ? details.teamAPlayers?.map(player => (
+                                <option key={player} value={player}>{player}</option>
+                              ))
+                            : details.teamBPlayers?.map(player => (
+                                <option key={player} value={player}>{player}</option>
+                              ))
+                          }
+                        </select>
+                        {isOwnGoal && (
+                          <p className="text-xs text-gray-500 mt-1">N/A for own goals</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Goal Type
+                        </label>
+                        <select
+                          value={goal.goal_type || 'normal'}
+                          onChange={(e) => {
+                            const newType = e.target.value as 'normal' | 'own_goal'
+                            updateGoal(index, 'goal_type', newType)
+                            // If switching to own goal, clear assist
+                            if (newType === 'own_goal') {
+                              updateGoal(index, 'assist', '')
+                              // Set default player team if not set
+                              if (!goal.player_team) {
+                                updateGoal(index, 'player_team', goal.team)
+                              }
+                            }
+                          }}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="normal">Normal Goal</option>
+                          <option value="own_goal">Own Goal</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeGoal(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Team
-                      </label>
-                      <select
-                        value={goal.team}
-                        onChange={(e) => updateGoal(index, 'team', e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="A">{details.teamAName || 'Team A'}</option>
-                        <option value="B">{details.teamBName || 'Team B'}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Scorer
-                      </label>
-                      <select
-                        value={goal.scorer}
-                        onChange={(e) => updateGoal(index, 'scorer', e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Select scorer</option>
-                        {goal.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
-                              <option key={player} value={player}>{player}</option>
-                            ))
-                          : details.teamBPlayers?.map(player => (
-                              <option key={player} value={player}>{player}</option>
-                            ))
-                        }
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Assist
-                      </label>
-                      <select
-                        value={goal.assist || ''}
-                        onChange={(e) => updateGoal(index, 'assist', e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Select assist provider</option>
-                        {goal.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
-                              <option key={player} value={player}>{player}</option>
-                            ))
-                          : details.teamBPlayers?.map(player => (
-                              <option key={player} value={player}>{player}</option>
-                            ))
-                        }
-                      </select>
-                    </div>
-                    <div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeGoal(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                )
+              })}
 
             </div>
           )}

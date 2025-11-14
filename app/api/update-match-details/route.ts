@@ -22,9 +22,35 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Calculate scores from goals and own goals
+    let scoreTeamA = 0
+    let scoreTeamB = 0
+
+    details.goals.forEach((goal: any) => {
+      const isOwnGoal = goal.goal_type === 'own_goal'
+      if (isOwnGoal) {
+        // Own goal: the team that gets the goal is stored in goal.team
+        // The player who scored it is from the opponent team
+        if (goal.team === 'A') {
+          scoreTeamA += 1
+        } else {
+          scoreTeamB += 1
+        }
+      } else {
+        // Normal goal: count for the team that scored
+        if (goal.team === 'A') {
+          scoreTeamA += 1
+        } else {
+          scoreTeamB += 1
+        }
+      }
+    })
+
     // Update match statistics in matches table
     const updateData: any = {
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      score_teama: scoreTeamA,
+      score_teamb: scoreTeamB
     }
 
     // Only update columns that exist (using correct lowercase column names)
@@ -68,15 +94,17 @@ export async function PUT(request: NextRequest) {
     // Insert new events
     const eventsToInsert: any[] = []
 
-    // Add goals
+    // Add goals (including own goals)
     details.goals.forEach((goal: any) => {
+      const isOwnGoal = goal.goal_type === 'own_goal'
       eventsToInsert.push({
         match_id: matchId,
-        event_type: 'goal',
+        event_type: isOwnGoal ? 'own_goal' : 'goal',
         minute: goal.minute,
-        team: goal.team,
+        team: goal.team, // This is the team that gets the goal (opponent team for OG)
         scorer: goal.scorer,
-        assist: goal.assist || null
+        assist: isOwnGoal ? null : (goal.assist || null), // No assists for own goals
+        goal_type: goal.goal_type || 'normal'
       })
     })
 

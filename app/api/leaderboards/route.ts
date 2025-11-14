@@ -76,6 +76,7 @@ export async function GET() {
             photo_url: matchPlayer.player.user_profile.photo_url,
             goals: 0,
             assists: 0,
+            own_goals: 0,
             yellow_cards: 0,
             red_cards: 0,
             clean_sheets: 0,
@@ -99,6 +100,7 @@ export async function GET() {
         if (stats) {
           playerStats.goals += stats.goals || 0
           playerStats.assists += stats.assists || 0
+          playerStats.own_goals += stats.own_goals || 0
           playerStats.yellow_cards += stats.yellow_cards || 0
           playerStats.red_cards += stats.red_cards || 0
           // Get clean sheets from events for this player in this match
@@ -134,6 +136,7 @@ export async function GET() {
     // Calculate per-match ratios
     playerStatsMap.forEach(playerStats => {
       if (playerStats.matches_played > 0) {
+        // Goals per match excludes own goals (own goals are negative)
         playerStats.goals_per_match = Number((playerStats.goals / playerStats.matches_played).toFixed(2))
         playerStats.assists_per_match = Number((playerStats.assists / playerStats.matches_played).toFixed(2))
       }
@@ -166,10 +169,14 @@ export async function GET() {
       .sort((a, b) => b.goals_per_match - a.goals_per_match)
       .slice(0, 10)
 
-    // Top Performers (combined goals + assists)
+    // Top Performers (combined goals + assists - own_goals as negative metric)
     const topPerformers = allPlayerStats
-      .filter(player => (player.goals + player.assists) > 0)
-      .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists))
+      .filter(player => (player.goals + player.assists - player.own_goals) > 0)
+      .sort((a, b) => {
+        const scoreA = a.goals + a.assists - a.own_goals
+        const scoreB = b.goals + b.assists - b.own_goals
+        return scoreB - scoreA
+      })
       .slice(0, 10)
 
     // Most Minutes Played

@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
           const playerId = playerNameToIdMap.get(event.scorer)
           if (playerId) {
             if (!playerStats.has(playerId)) {
-              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, minutes_played: 90 })
+              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, own_goals: 0, minutes_played: 90 })
             }
             playerStats.get(playerId).goals += 1
           }
@@ -78,9 +78,21 @@ export async function POST(request: NextRequest) {
           const playerId = playerNameToIdMap.get(event.assist)
           if (playerId) {
             if (!playerStats.has(playerId)) {
-              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, minutes_played: 90 })
+              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, own_goals: 0, minutes_played: 90 })
             }
             playerStats.get(playerId).assists += 1
+          }
+        }
+      } else if (event.event_type === 'own_goal') {
+        // Handle own goals - count against the player who scored it
+        if (event.scorer) {
+          const playerId = playerNameToIdMap.get(event.scorer)
+          if (playerId) {
+            if (!playerStats.has(playerId)) {
+              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, own_goals: 0, minutes_played: 90 })
+            }
+            playerStats.get(playerId).own_goals += 1
+            // Own goals do NOT count as regular goals or assists
           }
         }
       } else if (event.event_type === 'card') {
@@ -89,7 +101,7 @@ export async function POST(request: NextRequest) {
           const playerId = playerNameToIdMap.get(event.player)
           if (playerId) {
             if (!playerStats.has(playerId)) {
-              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, minutes_played: 90 })
+              playerStats.set(playerId, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, own_goals: 0, minutes_played: 90 })
             }
             if (event.card_type === 'yellow') {
               playerStats.get(playerId).yellow_cards += 1
@@ -113,6 +125,7 @@ export async function POST(request: NextRequest) {
           assists: stats.assists,
           yellow_cards: stats.yellow_cards,
           red_cards: stats.red_cards,
+          own_goals: stats.own_goals || 0,
           minutes_played: stats.minutes_played
         })
       }
@@ -191,6 +204,7 @@ export async function GET(request: NextRequest) {
             total_assists: 0,
             total_yellow_cards: 0,
             total_red_cards: 0,
+            total_own_goals: 0,
             total_minutes: 0,
             matches_played: 0,
             recent_matches: []
@@ -253,6 +267,7 @@ export async function GET(request: NextRequest) {
         total_assists: 0,
         total_yellow_cards: 0,
         total_red_cards: 0,
+        total_own_goals: 0,
         total_minutes: 0,
         total_clean_sheets: 0,
         total_saves: 0,
@@ -267,6 +282,7 @@ export async function GET(request: NextRequest) {
           assists: number
           yellow_cards: number
           red_cards: number
+          own_goals: number
           minutes_played: number
           clean_sheets: number
           saves: number
@@ -297,6 +313,7 @@ export async function GET(request: NextRequest) {
           aggregatedStats.total_assists += stats.assists || 0
           aggregatedStats.total_yellow_cards += stats.yellow_cards || 0
           aggregatedStats.total_red_cards += stats.red_cards || 0
+          aggregatedStats.total_own_goals += stats.own_goals || 0
           // Get clean sheets from events for this match
           const matchCleanSheets = cleanSheetsPerMatch.get(matchPlayer.match.id) || 0
           aggregatedStats.total_clean_sheets += matchCleanSheets
@@ -318,6 +335,7 @@ export async function GET(request: NextRequest) {
               assists: stats.assists,
               yellow_cards: stats.yellow_cards,
               red_cards: stats.red_cards,
+              own_goals: stats.own_goals || 0,
               minutes_played: stats.minutes_played || 90,
               clean_sheets: matchCleanSheets,
               saves: matchSaves
@@ -345,6 +363,7 @@ export async function GET(request: NextRequest) {
               assists: 0,
               yellow_cards: 0,
               red_cards: 0,
+              own_goals: 0,
               minutes_played: 90,
               clean_sheets: matchCleanSheets,
               saves: matchSaves
@@ -364,6 +383,7 @@ export async function GET(request: NextRequest) {
         total_assists: aggregatedStats.total_assists,
         total_yellow_cards: aggregatedStats.total_yellow_cards,
         total_red_cards: aggregatedStats.total_red_cards,
+        total_own_goals: aggregatedStats.total_own_goals,
         total_minutes: aggregatedStats.total_minutes,
         matches_played: aggregatedStats.matches_played,
         recent_matches_count: aggregatedStats.recent_matches.length
