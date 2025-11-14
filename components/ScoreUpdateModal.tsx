@@ -133,7 +133,7 @@ export default function ScoreUpdateModal({ match, isOpen, onClose, onSave }: Sco
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="score_teamA" className="block text-sm font-medium text-gray-700 mb-1">
-                    Team A Score
+                    {(match as any).teamA_name || 'Team A'} Score
                   </label>
                   <Input
                     id="score_teamA"
@@ -147,7 +147,7 @@ export default function ScoreUpdateModal({ match, isOpen, onClose, onSave }: Sco
 
                 <div>
                   <label htmlFor="score_teamB" className="block text-sm font-medium text-gray-700 mb-1">
-                    Team B Score
+                    {(match as any).teamB_name || 'Team B'} Score
                   </label>
                   <Input
                     id="score_teamB"
