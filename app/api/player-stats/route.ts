@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
             *,
             user_profile:user_profiles(*)
           ),
-          stats(*)
+          stats(rating, goals, assists, yellow_cards, red_cards, minutes_played, own_goals)
         `)
         .eq('player_id', playerId)
 
@@ -206,6 +206,9 @@ export async function GET(request: NextRequest) {
             total_red_cards: 0,
             total_own_goals: 0,
             total_minutes: 0,
+            total_clean_sheets: 0,
+            total_saves: 0,
+            average_rating: 0,
             matches_played: 0,
             recent_matches: []
           }
@@ -271,6 +274,8 @@ export async function GET(request: NextRequest) {
         total_minutes: 0,
         total_clean_sheets: 0,
         total_saves: 0,
+        total_ratings: 0,
+        rated_matches: 0,
         matches_played: playerStats.length,
         recent_matches: [] as Array<{
           match_id: string
@@ -286,6 +291,7 @@ export async function GET(request: NextRequest) {
           minutes_played: number
           clean_sheets: number
           saves: number
+          rating: number | null
         }>
       }
 
@@ -322,6 +328,11 @@ export async function GET(request: NextRequest) {
           aggregatedStats.total_saves += matchSaves
           // Use 90 minutes per match if minutes_played is 0 or not set
           aggregatedStats.total_minutes += stats.minutes_played || 90
+          // Track ratings
+          if (stats.rating !== null && stats.rating !== undefined) {
+            aggregatedStats.total_ratings += stats.rating
+            aggregatedStats.rated_matches += 1
+          }
 
           // Add to recent matches
           if (matchPlayer.match) {
@@ -338,7 +349,8 @@ export async function GET(request: NextRequest) {
               own_goals: stats.own_goals || 0,
               minutes_played: stats.minutes_played || 90,
               clean_sheets: matchCleanSheets,
-              saves: matchSaves
+              saves: matchSaves,
+              rating: stats.rating || null
             })
           }
         } else {
@@ -366,7 +378,8 @@ export async function GET(request: NextRequest) {
               own_goals: 0,
               minutes_played: 90,
               clean_sheets: matchCleanSheets,
-              saves: matchSaves
+              saves: matchSaves,
+              rating: null
             })
           }
         }
@@ -377,6 +390,11 @@ export async function GET(request: NextRequest) {
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 5)
 
+      // Calculate average rating
+      const average_rating = aggregatedStats.rated_matches > 0
+        ? aggregatedStats.total_ratings / aggregatedStats.rated_matches
+        : 0
+
       // Debug: Log final aggregated stats
       console.log('Final aggregated stats:', {
         total_goals: aggregatedStats.total_goals,
@@ -386,12 +404,16 @@ export async function GET(request: NextRequest) {
         total_own_goals: aggregatedStats.total_own_goals,
         total_minutes: aggregatedStats.total_minutes,
         matches_played: aggregatedStats.matches_played,
+        average_rating: average_rating,
         recent_matches_count: aggregatedStats.recent_matches.length
       })
 
       return NextResponse.json({
         success: true,
-        stats: aggregatedStats
+        stats: {
+          ...aggregatedStats,
+          average_rating: average_rating
+        }
       }, {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

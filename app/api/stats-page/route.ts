@@ -73,25 +73,27 @@ export async function GET(request: NextRequest) {
       const playerPhoto = matchPlayer.player?.user_profile?.photo_url
       const playerPosition = matchPlayer.player?.user_profile?.position || matchPlayer.player?.preferred_position || null
 
-      if (!playerStatsMap.has(playerId)) {
-        playerStatsMap.set(playerId, {
-          player_id: playerId,
-          player_name: playerName,
-          player_photo: playerPhoto,
-          player_position: playerPosition,
-          total_goals: 0,
-          total_assists: 0,
-          total_own_goals: 0,
-          total_yellow_cards: 0,
-          total_red_cards: 0,
-          total_clean_sheets: 0,
-          total_saves: 0,
-          total_minutes: 0,
-          matches_played: 0,
-          recent_matches: [],
-          unique_matches: new Set() // Track unique matches
-        })
-      }
+        if (!playerStatsMap.has(playerId)) {
+          playerStatsMap.set(playerId, {
+            player_id: playerId,
+            player_name: playerName,
+            player_photo: playerPhoto,
+            player_position: playerPosition,
+            total_goals: 0,
+            total_assists: 0,
+            total_own_goals: 0,
+            total_yellow_cards: 0,
+            total_red_cards: 0,
+            total_clean_sheets: 0,
+            total_saves: 0,
+            total_minutes: 0,
+            total_ratings: 0,
+            rated_matches: 0,
+            matches_played: 0,
+            recent_matches: [],
+            unique_matches: new Set() // Track unique matches
+          })
+        }
 
       const playerStats = playerStatsMap.get(playerId)
 
@@ -116,6 +118,11 @@ export async function GET(request: NextRequest) {
         const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
         playerStats.total_saves += matchSaves
         playerStats.total_minutes += stats.minutes_played || 90
+        // Track ratings
+        if (stats.rating !== null && stats.rating !== undefined) {
+          playerStats.total_ratings += stats.rating
+          playerStats.rated_matches += 1
+        }
 
         // Add to recent matches
         playerStats.recent_matches.push({
@@ -167,17 +174,22 @@ export async function GET(request: NextRequest) {
       playerStats.matches_played = playerStats.unique_matches.size
       delete playerStats.unique_matches // Clean up
 
+      // Calculate average rating
+      playerStats.average_rating = playerStats.rated_matches > 0
+        ? Number((playerStats.total_ratings / playerStats.rated_matches).toFixed(2))
+        : 0
+
       // Calculate Unified Score
       // Goals: 3 points, Assists: 2 points, Saves: 0.5 points, Clean Sheets: 2 points, Own Goals: -2 points
-      // Future: Match Rating (average × 2) - will be added when match ratings are implemented
+      // Match Rating: average_rating × 2
       const goalsPoints = playerStats.total_goals * 3
       const assistsPoints = playerStats.total_assists * 2
       const savesPoints = playerStats.total_saves * 0.5
       const cleanSheetsPoints = playerStats.total_clean_sheets * 2
       const ownGoalsPenalty = playerStats.total_own_goals * 2 // Negative points
-      // const matchRatingPoints = 0 // Will be: (average_rating × 2) when implemented
+      const matchRatingPoints = (playerStats.average_rating || 0) * 2
 
-      playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty) * 10) / 10
+      playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty + matchRatingPoints) * 10) / 10
     })
 
     // Convert to arrays and sort

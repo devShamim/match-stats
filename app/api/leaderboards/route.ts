@@ -85,6 +85,8 @@ export async function GET() {
             total_minutes: 0,
             goals_per_match: 0,
             assists_per_match: 0,
+            total_ratings: 0,
+            rated_matches: 0,
             unique_matches: new Set() // Track unique matches
           })
         }
@@ -112,6 +114,11 @@ export async function GET() {
           const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
           playerStats.saves += matchSaves
           playerStats.total_minutes += stats.minutes_played || 90
+          // Track ratings
+          if (stats.rating !== null && stats.rating !== undefined) {
+            playerStats.total_ratings += stats.rating
+            playerStats.rated_matches += 1
+          }
         } else {
           // If no stats record exists, assume 90 minutes played
           playerStats.total_minutes += 90
@@ -141,17 +148,22 @@ export async function GET() {
         playerStats.assists_per_match = Number((playerStats.assists / playerStats.matches_played).toFixed(2))
       }
 
+      // Calculate average rating
+      playerStats.average_rating = playerStats.rated_matches > 0
+        ? Number((playerStats.total_ratings / playerStats.rated_matches).toFixed(2))
+        : 0
+
       // Calculate Unified Score
       // Goals: 3 points, Assists: 2 points, Saves: 0.5 points, Clean Sheets: 2 points, Own Goals: -2 points
-      // Future: Match Rating (average × 2) - will be added when match ratings are implemented
+      // Match Rating: average_rating × 2
       const goalsPoints = playerStats.goals * 3
       const assistsPoints = playerStats.assists * 2
       const savesPoints = playerStats.saves * 0.5
       const cleanSheetsPoints = playerStats.clean_sheets * 2
       const ownGoalsPenalty = playerStats.own_goals * 2 // Negative points
-      // const matchRatingPoints = 0 // Will be: (average_rating × 2) when implemented
+      const matchRatingPoints = (playerStats.average_rating || 0) * 2
 
-      playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty) * 10) / 10
+      playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty + matchRatingPoints) * 10) / 10
 
       // Store breakdown for display
       playerStats.score_breakdown = {
@@ -160,7 +172,7 @@ export async function GET() {
         saves: savesPoints,
         clean_sheets: cleanSheetsPoints,
         own_goals: -ownGoalsPenalty,
-        // match_rating: 0 // Will be added when implemented
+        match_rating: matchRatingPoints
       }
     })
 

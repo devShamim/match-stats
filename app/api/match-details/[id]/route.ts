@@ -27,7 +27,8 @@ export async function GET(
             *,
             user_profile:user_profiles(*)
           ),
-          team:teams(*)
+          team:teams(*),
+          stats(rating)
         )
       `)
       .eq('id', matchId)
@@ -61,8 +62,8 @@ export async function GET(
     const cleanSheets = events?.filter(e => e.event_type === 'clean_sheet') || []
 
     // Get team players - with fallback if match_players table doesn't exist
-    let teamAPlayers: string[] = []
-    let teamBPlayers: string[] = []
+    let teamAPlayers: Array<{ name: string; rating: number | null; playerId: string }> = []
+    let teamBPlayers: Array<{ name: string; rating: number | null; playerId: string }> = []
     let teamAPlayerIds: string[] = []
     let teamBPlayerIds: string[] = []
 
@@ -75,11 +76,19 @@ export async function GET(
         const teamBId = teams[1].id
 
         const teamAPlayersData = match.match_players.filter((mp: any) => mp.team_id === teamAId)
-        teamAPlayers = teamAPlayersData.map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
+        teamAPlayers = teamAPlayersData.map((mp: any) => ({
+          name: mp.player?.user_profile?.name || 'Unknown',
+          rating: mp.stats?.rating || null,
+          playerId: mp.player?.id || ''
+        })).filter((p: any) => p.name !== 'Unknown') || []
         teamAPlayerIds = teamAPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
 
         const teamBPlayersData = match.match_players.filter((mp: any) => mp.team_id === teamBId)
-        teamBPlayers = teamBPlayersData.map((mp: any) => mp.player?.user_profile?.name).filter(Boolean) || []
+        teamBPlayers = teamBPlayersData.map((mp: any) => ({
+          name: mp.player?.user_profile?.name || 'Unknown',
+          rating: mp.stats?.rating || null,
+          playerId: mp.player?.id || ''
+        })).filter((p: any) => p.name !== 'Unknown') || []
         teamBPlayerIds = teamBPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
       }
     } else {
@@ -92,10 +101,14 @@ export async function GET(
         `)
 
       if (!playersError && allPlayers) {
-        const playerNames = allPlayers.map(p => p.user_profile?.name).filter(Boolean)
+        const playerData = allPlayers.map(p => ({
+          name: p.user_profile?.name || 'Unknown',
+          rating: null,
+          playerId: p.id
+        })).filter((p: any) => p.name !== 'Unknown')
         const playerIds = allPlayers.map(p => p.id).filter(Boolean)
-        teamAPlayers = playerNames
-        teamBPlayers = playerNames
+        teamAPlayers = playerData
+        teamBPlayers = playerData
         teamAPlayerIds = playerIds
         teamBPlayerIds = playerIds
       }

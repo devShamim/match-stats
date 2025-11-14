@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import PlayerAvatar from '@/components/PlayerAvatar'
-import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save } from 'lucide-react'
+import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save, Star } from 'lucide-react'
 
 interface PlayerStats {
   total_goals: number
@@ -17,6 +18,7 @@ interface PlayerStats {
   total_clean_sheets: number
   total_saves: number
   total_minutes: number
+  average_rating: number
   matches_played: number
   recent_matches: Array<{
     match_id: string
@@ -32,6 +34,7 @@ interface PlayerStats {
     clean_sheets: number
     saves: number
     minutes_played: number
+    rating: number | null
   }>
 }
 
@@ -376,25 +379,27 @@ export default function PlayerStatsPage() {
               </CardContent>
             </Card>
 
-            {/* Minutes Played Card */}
+            {/* Average Rating Card */}
             <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10"></div>
               <CardContent className="relative p-8">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <Clock className="h-6 w-6 text-white" />
+                    <Star className="h-6 w-6 text-white" />
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-medium text-gray-800">Minutes</p>
-                    <p className="text-xs text-purple-600 font-medium">Played</p>
+                    <p className="text-lg font-medium text-gray-800">Average Rating</p>
+                    <p className="text-xs text-purple-600 font-medium">Performance</p>
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_minutes}</p>
+                  <p className="text-4xl font-bold text-gray-900 mb-2">
+                    {stats.average_rating ? stats.average_rating.toFixed(1) : 'N/A'}
+                  </p>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{width: `${Math.min((stats.total_minutes / (stats.matches_played * 90)) * 100, 100)}%`}}></div>
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{width: `${Math.min((stats.average_rating || 0) * 10, 100)}%`}}></div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? (stats.total_minutes / stats.matches_played).toFixed(0) : 0} avg per match</p>
+                  <p className="text-xs text-gray-500 mt-2">Out of 10.0</p>
                 </div>
               </CardContent>
             </Card>
@@ -424,26 +429,28 @@ export default function PlayerStatsPage() {
                         {/* Teams */}
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                           <div className="flex items-center gap-1 sm:gap-2">
-                            <p className="font-semibold text-gray-900 text-sm sm:text-base">{match.teamA_name || 'Team A'}</p>
+                            <p className="font-semibold text-gray-900 text-xs sm:text-base">{match.teamA_name || 'Team A'}</p>
                             {winner === 'teamA' && (
                               <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 flex-shrink-0" />
                             )}
                           </div>
                           <span className="text-gray-400 text-xs sm:text-sm">vs</span>
                           <div className="flex items-center gap-1 sm:gap-2">
-                            <p className="font-semibold text-gray-900 text-sm sm:text-base">{match.teamB_name || 'Team B'}</p>
+                            <p className="font-semibold text-gray-900 text-xs sm:text-base">{match.teamB_name || 'Team B'}</p>
                             {winner === 'teamB' && (
                               <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 flex-shrink-0" />
                             )}
                           </div>
                         </div>
                         {/* Date */}
-                        <p className="text-xs sm:text-sm font-medium text-gray-600">{formatDate(match.date)}</p>
+                        <div className="flex flex-col items-start sm:items-end gap-1">
+                          <p className="text-xs sm:text-sm font-medium text-gray-600">{formatDate(match.date)}</p>
+                        </div>
                       </div>
 
                       {/* Statistics - Mobile: Wrapped Grid, Desktop: Row */}
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 sm:space-x-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:gap-4">
                           {match.goals > 0 && (
                             <div className="flex items-center text-yellow-600">
                               <Trophy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
@@ -454,6 +461,13 @@ export default function PlayerStatsPage() {
                             <div className="flex items-center text-blue-600">
                               <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                               <span className="font-medium text-xs sm:text-sm">{match.assists} assist{match.assists !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                          {/* Rating - moved here beside goals and assists */}
+                          {match.rating !== null && (
+                            <div className="flex items-center text-purple-600">
+                              <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{match.rating.toFixed(1)}/10</span>
                             </div>
                           )}
                           {(match.own_goals || 0) > 0 && (
@@ -487,11 +501,13 @@ export default function PlayerStatsPage() {
                             </div>
                           )}
                         </div>
-                        {/* Minutes Played */}
-                        <div className="flex items-center text-gray-600 border-t sm:border-t-0 pt-2 sm:pt-0">
-                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                          <span className="font-medium text-xs sm:text-sm">{match.minutes_played} min</span>
-                        </div>
+                        <Link
+                          href={`/matches/${match.match_id}`}
+                          className="inline-flex items-center text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors self-start sm:self-auto sm:ml-auto"
+                        >
+                          View Match Details
+                          <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 ml-1 rotate-180" />
+                        </Link>
                       </div>
                     </div>
                   )

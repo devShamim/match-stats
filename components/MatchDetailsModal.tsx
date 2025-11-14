@@ -12,7 +12,7 @@ import { Match } from '@/types'
 import {
   X, Save, Plus, Minus, Clock, Trophy, Users, Target,
   Zap, AlertTriangle, UserCheck, UserX, Shield, Settings,
-  Calendar, MapPin, Edit3
+  Calendar, MapPin, Edit3, Star
 } from 'lucide-react'
 
 interface MatchDetailsModalProps {
@@ -90,7 +90,8 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const { showToast } = useToast()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'saves' | 'clean_sheets' | 'stats' | 'others'>('goals')
+  const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'saves' | 'clean_sheets' | 'stats' | 'ratings' | 'others'>('goals')
+  const [playerRatings, setPlayerRatings] = useState<Map<string, number>>(new Map())
 
   // State for match info form
   const [matchInfo, setMatchInfo] = useState({
@@ -226,6 +227,25 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
           setSelectedTeamAPlayers(teamPlayersData.details.teamAPlayerIds || [])
           setSelectedTeamBPlayers(teamPlayersData.details.teamBPlayerIds || [])
         }
+      }
+
+      // Load existing ratings
+      const { data: matchPlayers, error: matchPlayersError } = await supabase
+        .from('match_players')
+        .select(`
+          player_id,
+          stats(rating)
+        `)
+        .eq('match_id', match.id)
+
+      if (!matchPlayersError && matchPlayers) {
+        const ratingsMap = new Map<string, number>()
+        matchPlayers.forEach((mp: any) => {
+          if (mp.player_id && mp.stats && mp.stats.rating !== null) {
+            ratingsMap.set(mp.player_id, mp.stats.rating)
+          }
+        })
+        setPlayerRatings(ratingsMap)
       }
     } catch (error) {
       console.error('Error loading match details:', error)
@@ -476,6 +496,76 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     }
   }
 
+  const handleSaveRatings = async () => {
+    if (!match) return
+
+    try {
+      // Get all match_players for this match
+      const { data: matchPlayers, error: matchPlayersError } = await supabase
+        .from('match_players')
+        .select('id, player_id')
+        .eq('match_id', match.id)
+
+      if (matchPlayersError) {
+        throw new Error('Failed to fetch match players')
+      }
+
+      // Update ratings for each player
+      for (const mp of matchPlayers || []) {
+        const rating = playerRatings.get(mp.player_id)
+
+        // Get or create stats record
+        const { data: existingStats, error: statsError } = await supabase
+          .from('stats')
+          .select('id')
+          .eq('match_player_id', mp.id)
+          .single()
+
+        if (statsError && statsError.code !== 'PGRST116') {
+          console.error('Error fetching stats:', statsError)
+          continue
+        }
+
+        if (existingStats) {
+          // Update existing stats
+          const { error: updateError } = await supabase
+            .from('stats')
+            .update({ rating: rating || null })
+            .eq('id', existingStats.id)
+
+          if (updateError) {
+            console.error('Error updating rating:', updateError)
+          }
+        } else {
+          // Create new stats record with rating
+          const { error: insertError } = await supabase
+            .from('stats')
+            .insert({
+              match_player_id: mp.id,
+              goals: 0,
+              assists: 0,
+              yellow_cards: 0,
+              red_cards: 0,
+              minutes_played: 0,
+              own_goals: 0,
+              rating: rating || null
+            })
+
+          if (insertError) {
+            console.error('Error inserting rating:', insertError)
+          }
+        }
+      }
+
+      showToast('Player ratings saved successfully!', 'success')
+      // Reload match details to refresh ratings
+      loadMatchDetails()
+    } catch (err: any) {
+      console.error('Error saving ratings:', err)
+      showToast(err.message || 'Failed to save ratings', 'error')
+    }
+  }
+
   if (!isOpen || !match) return null
 
   return (
@@ -513,6 +603,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
               { id: 'saves', label: 'Saves', icon: Shield },
               { id: 'clean_sheets', label: 'Clean Sheets', icon: Shield },
               { id: 'stats', label: 'Statistics', icon: Zap },
+              { id: 'ratings', label: 'Ratings', icon: Star },
               { id: 'others', label: 'Others', icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
               <button
@@ -1146,6 +1237,123 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                   placeholder="Write a brief summary of the match..."
                   className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
+              </Card>
+            </div>
+          )}
+
+          {/* Ratings Tab */}
+          {activeTab === 'ratings' && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Star className="h-5 w-5 mr-2" />
+                    Player Ratings
+                  </CardTitle>
+                  <CardDescription>
+                    Rate each player's performance out of 10
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Team A Players Ratings */}
+                    <div>
+                      <h4 className="font-medium mb-3 text-blue-600">{matchInfo.teamA_name || 'Team A'}</h4>
+                      <div className="space-y-3 max-h-96 overflow-y-auto border rounded-md p-4">
+                        {allPlayers
+                          .filter(player => selectedTeamAPlayers.includes(player.id))
+                          .map(player => (
+                            <div key={player.id} className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-700 flex-1">
+                                {player.user_profile?.name || 'Unknown Player'}
+                              </span>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.1"
+                                value={playerRatings.get(player.id) || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value ? parseFloat(e.target.value) : 0
+                                  if (value >= 0 && value <= 10) {
+                                    setPlayerRatings(prev => {
+                                      const newMap = new Map(prev)
+                                      if (value > 0) {
+                                        newMap.set(player.id, value)
+                                      } else {
+                                        newMap.delete(player.id)
+                                      }
+                                      return newMap
+                                    })
+                                  }
+                                }}
+                                placeholder="0-10"
+                                className="w-20 ml-2"
+                              />
+                            </div>
+                          ))}
+                        {allPlayers.filter(player => selectedTeamAPlayers.includes(player.id)).length === 0 && (
+                          <div className="text-gray-500 text-sm italic text-center py-4">
+                            No players assigned to Team A
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Team B Players Ratings */}
+                    <div>
+                      <h4 className="font-medium mb-3 text-red-600">{matchInfo.teamB_name || 'Team B'}</h4>
+                      <div className="space-y-3 max-h-96 overflow-y-auto border rounded-md p-4">
+                        {allPlayers
+                          .filter(player => selectedTeamBPlayers.includes(player.id))
+                          .map(player => (
+                            <div key={player.id} className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-700 flex-1">
+                                {player.user_profile?.name || 'Unknown Player'}
+                              </span>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.1"
+                                value={playerRatings.get(player.id) || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value ? parseFloat(e.target.value) : 0
+                                  if (value >= 0 && value <= 10) {
+                                    setPlayerRatings(prev => {
+                                      const newMap = new Map(prev)
+                                      if (value > 0) {
+                                        newMap.set(player.id, value)
+                                      } else {
+                                        newMap.delete(player.id)
+                                      }
+                                      return newMap
+                                    })
+                                  }
+                                }}
+                                placeholder="0-10"
+                                className="w-20 ml-2"
+                              />
+                            </div>
+                          ))}
+                        {allPlayers.filter(player => selectedTeamBPlayers.includes(player.id)).length === 0 && (
+                          <div className="text-gray-500 text-sm italic text-center py-4">
+                            No players assigned to Team B
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <Button
+                      onClick={handleSaveRatings}
+                      className="min-w-[120px]"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Ratings
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
             </div>
           )}

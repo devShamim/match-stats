@@ -67,8 +67,8 @@ interface MatchDetails {
   match_summary?: string
   teamAName?: string
   teamBName?: string
-  teamAPlayers?: string[]
-  teamBPlayers?: string[]
+  teamAPlayers?: Array<{ name: string; rating: number | null; playerId: string }> | string[]
+  teamBPlayers?: Array<{ name: string; rating: number | null; playerId: string }> | string[]
 }
 
 export default function MatchDetailsPage() {
@@ -707,12 +707,40 @@ export default function MatchDetailsPage() {
                 </div>
                 {details.teamAPlayers && details.teamAPlayers.length > 0 ? (
                   <div className="space-y-2">
-                    {details.teamAPlayers.map((player, index) => (
-                      <div key={index} className="flex items-center p-2 bg-blue-50 rounded-lg">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
-                        <span className="text-gray-700">{player}</span>
-                      </div>
-                    ))}
+                    {details.teamAPlayers.map((player, index) => {
+                      const playerName = typeof player === 'string' ? player : player.name
+                      const playerRating = typeof player === 'string' ? null : player.rating
+                      const playerId = typeof player === 'string' ? null : player.playerId
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                          <div className="flex items-center flex-1">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
+                            {playerId ? (
+                              <Link href={`/player/${playerId}`} className="text-gray-700 hover:text-blue-600 font-medium transition-colors cursor-pointer">
+                                {playerName}
+                              </Link>
+                            ) : (
+                              <span className="text-gray-700">{playerName}</span>
+                            )}
+                          </div>
+                          {playerRating !== null && (
+                            <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
+                              playerRating >= 5
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-red-50 border-red-200'
+                            }`}>
+                              <span className={`font-bold text-sm ${
+                                playerRating >= 5
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                              }`}>
+                                {playerRating.toFixed(1)}/10
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="text-gray-500 text-sm italic">No players assigned</div>
@@ -727,12 +755,40 @@ export default function MatchDetailsPage() {
                 </div>
                 {details.teamBPlayers && details.teamBPlayers.length > 0 ? (
                   <div className="space-y-2">
-                    {details.teamBPlayers.map((player, index) => (
-                      <div key={index} className="flex items-center p-2 bg-red-50 rounded-lg">
-                        <div className="w-2 h-2 bg-red-600 rounded-full mr-3"></div>
-                        <span className="text-gray-700">{player}</span>
-                      </div>
-                    ))}
+                    {details.teamBPlayers.map((player, index) => {
+                      const playerName = typeof player === 'string' ? player : player.name
+                      const playerRating = typeof player === 'string' ? null : player.rating
+                      const playerId = typeof player === 'string' ? null : player.playerId
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                          <div className="flex items-center flex-1">
+                            <div className="w-2 h-2 bg-red-600 rounded-full mr-3"></div>
+                            {playerId ? (
+                              <Link href={`/player/${playerId}`} className="text-gray-700 hover:text-red-600 font-medium transition-colors cursor-pointer">
+                                {playerName}
+                              </Link>
+                            ) : (
+                              <span className="text-gray-700">{playerName}</span>
+                            )}
+                          </div>
+                          {playerRating !== null && (
+                            <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
+                              playerRating >= 5
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-red-50 border-red-200'
+                            }`}>
+                              <span className={`font-bold text-sm ${
+                                playerRating >= 5
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                              }`}>
+                                {playerRating.toFixed(1)}/10
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="text-gray-500 text-sm italic">No players assigned</div>
