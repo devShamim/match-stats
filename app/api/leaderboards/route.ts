@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/auth'
 
+// Helper function to detect if a player is a defender
+function isDefender(position: string | null | undefined): boolean {
+  if (!position) return false
+  const pos = position.toLowerCase()
+  return pos.includes('defender') ||
+         pos.includes('cb') ||
+         pos.includes('lb') ||
+         pos.includes('rb') ||
+         pos.includes('lwb') ||
+         pos.includes('rwb') ||
+         pos.includes('sw') ||
+         pos.includes('cdm') ||
+         pos === 'defender'
+}
+
 export async function GET() {
   try {
     // Get all match_players with stats and player information
@@ -9,6 +24,7 @@ export async function GET() {
       .select(`
         *,
         match:matches(*),
+        team:teams(*),
         player:players(
           *,
           user_profile:user_profiles(*)
@@ -68,12 +84,20 @@ export async function GET() {
       if (matchPlayer.player?.user_profile?.name) {
         const playerName = matchPlayer.player.user_profile.name
         const playerId = matchPlayer.player.id
+        // Get player position from match_players.position, user_profile.position, or preferred_position
+        const playerPosition = matchPlayer.position ||
+                              matchPlayer.player.user_profile.position ||
+                              matchPlayer.player.preferred_position ||
+                              null
+        const isPlayerDefender = isDefender(playerPosition)
 
         if (!playerStatsMap.has(playerId)) {
           playerStatsMap.set(playerId, {
             id: playerId,
             name: playerName,
             photo_url: matchPlayer.player.user_profile.photo_url,
+            position: playerPosition,
+            is_defender: isPlayerDefender,
             goals: 0,
             assists: 0,
             own_goals: 0,
@@ -92,6 +116,11 @@ export async function GET() {
         }
 
         const playerStats = playerStatsMap.get(playerId)
+        // Update position if not set
+        if (!playerStats.position) {
+          playerStats.position = playerPosition
+          playerStats.is_defender = isPlayerDefender
+        }
 
         // Add unique match to set (this ensures we count all matches, not just those with stats)
         playerStats.unique_matches.add(matchPlayer.match.id)
@@ -99,19 +128,38 @@ export async function GET() {
         // Get stats for this match_player (stats is an object, not array)
         const stats = matchPlayer.stats || null
 
+        // Get clean sheets from events for this player in this match (before auto-credit logic)
+        const match = matchPlayer.match
+        const playerTeam = matchPlayer.team
+        const cleanSheetsKey = `${matchPlayer.match.id}-${playerName}`
+        let matchCleanSheets = cleanSheetsPerPlayerPerMatch.get(cleanSheetsKey) || 0
+
+        // Auto-credit defenders if their team kept a clean sheet (only if match is completed and player played in this match)
+        // DISABLED: Automatic clean sheet distribution is currently disabled
+        // Clean sheets must be manually added via match_events
+        // if (match && match.status === 'completed' && match.score_teamA !== null && match.score_teamB !== null) {
+        //   const teamName = playerTeam?.name || ''
+        //   const isTeamA = teamName === match.teamA_name || teamName === 'Team A' || (!match.teamA_name && teamName.includes('A'))
+        //   const opponentScore = isTeamA ? (match.score_teamB || 0) : (match.score_teamA || 0)
+        //   const teamKeptCleanSheet = opponentScore === 0
+        //
+        //   // Only credit if player is a defender, team kept clean sheet, and they don't already have a clean sheet event
+        //   if (isPlayerDefender && teamKeptCleanSheet && matchCleanSheets === 0) {
+        //     matchCleanSheets = 1
+        //   }
+        // }
+
+        // Get saves from events for this player in this match
+        const savesKey = `${matchPlayer.match.id}-${playerName}`
+        const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
+
         if (stats) {
           playerStats.goals += stats.goals || 0
           playerStats.assists += stats.assists || 0
           playerStats.own_goals += stats.own_goals || 0
           playerStats.yellow_cards += stats.yellow_cards || 0
           playerStats.red_cards += stats.red_cards || 0
-          // Get clean sheets from events for this player in this match
-          const cleanSheetsKey = `${matchPlayer.match.id}-${playerName}`
-          const matchCleanSheets = cleanSheetsPerPlayerPerMatch.get(cleanSheetsKey) || 0
           playerStats.clean_sheets += matchCleanSheets
-          // Get saves from events for this player in this match
-          const savesKey = `${matchPlayer.match.id}-${playerName}`
-          const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
           playerStats.saves += matchSaves
           playerStats.total_minutes += stats.minutes_played || 90
           // Track ratings
@@ -122,13 +170,7 @@ export async function GET() {
         } else {
           // If no stats record exists, assume 90 minutes played
           playerStats.total_minutes += 90
-          // Get clean sheets from events for this player in this match even if no stats record
-          const cleanSheetsKey = `${matchPlayer.match.id}-${playerName}`
-          const matchCleanSheets = cleanSheetsPerPlayerPerMatch.get(cleanSheetsKey) || 0
           playerStats.clean_sheets += matchCleanSheets
-          // Get saves from events for this player in this match even if no stats record
-          const savesKey = `${matchPlayer.match.id}-${playerName}`
-          const matchSaves = savesPerPlayerPerMatch.get(savesKey) || 0
           playerStats.saves += matchSaves
         }
       }
@@ -154,14 +196,21 @@ export async function GET() {
         : 0
 
       // Calculate Unified Score
-      // Goals: 3 points, Assists: 2 points, Saves: 0.5 points, Clean Sheets: 2 points, Own Goals: -2 points
-      // Match Rating: average_rating × 2
+      // Goals: 3 points, Assists: 2 points, Saves: 0.5 points
+      // Clean Sheets: 3 points for defenders, 2 points for others
+      // Own Goals: -2 points
+      // Match Rating: average_rating × 2 (× 1.5 for defenders)
       const goalsPoints = playerStats.goals * 3
       const assistsPoints = playerStats.assists * 2
       const savesPoints = playerStats.saves * 0.5
-      const cleanSheetsPoints = playerStats.clean_sheets * 2
+      // Defenders get 3 points per clean sheet, others get 2 points
+      const cleanSheetsPoints = playerStats.is_defender
+        ? playerStats.clean_sheets * 3
+        : playerStats.clean_sheets * 2
       const ownGoalsPenalty = playerStats.own_goals * 2 // Negative points
-      const matchRatingPoints = (playerStats.average_rating || 0) * 2
+      // Defenders get 1.5x multiplier on match rating
+      const ratingMultiplier = playerStats.is_defender ? 1.5 : 1
+      const matchRatingPoints = (playerStats.average_rating || 0) * 2 * ratingMultiplier
 
       playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty + matchRatingPoints) * 10) / 10
 

@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/auth'
 
+// Helper function to detect if a player is a defender
+function isDefender(position: string | null | undefined): boolean {
+  if (!position) return false
+  const pos = position.toLowerCase()
+  return pos.includes('defender') ||
+         pos.includes('cb') ||
+         pos.includes('lb') ||
+         pos.includes('rb') ||
+         pos.includes('lwb') ||
+         pos.includes('rwb') ||
+         pos.includes('sw') ||
+         pos.includes('cdm') ||
+         pos === 'defender'
+}
+
 // Function to assign stats to players based on match events
 export async function POST(request: NextRequest) {
   try {
@@ -177,6 +192,7 @@ export async function GET(request: NextRequest) {
         .select(`
           *,
           match:matches(*),
+          team:teams(*),
           player:players(
             *,
             user_profile:user_profiles(*)
@@ -295,6 +311,13 @@ export async function GET(request: NextRequest) {
         }>
       }
 
+      // Get player position (from first match player record)
+      const playerPosition = playerStats[0]?.position ||
+                            playerStats[0]?.player?.user_profile?.position ||
+                            playerStats[0]?.player?.preferred_position ||
+                            null
+      const isPlayerDefender = isDefender(playerPosition)
+
       // Process each match_player and their stats
       playerStats.forEach((matchPlayer, index) => {
         console.log(`Match Player ${index}:`, {
@@ -305,6 +328,26 @@ export async function GET(request: NextRequest) {
 
         // Get the stats for this match_player (stats is an object, not array)
         const stats = matchPlayer.stats || null
+
+        // Get clean sheets from events for this match (before auto-credit logic)
+        const match = matchPlayer.match
+        const playerTeam = matchPlayer.team
+        let matchCleanSheets = cleanSheetsPerMatch.get(matchPlayer.match.id) || 0
+
+        // Auto-credit defenders if their team kept a clean sheet (only if match is completed and player played in this match)
+        // DISABLED: Automatic clean sheet distribution is currently disabled
+        // Clean sheets must be manually added via match_events
+        // if (match && match.status === 'completed' && match.score_teamA !== null && match.score_teamB !== null) {
+        //   const teamName = playerTeam?.name || ''
+        //   const isTeamA = teamName === match.teamA_name || teamName === 'Team A' || (!match.teamA_name && teamName.includes('A'))
+        //   const opponentScore = isTeamA ? (match.score_teamB || 0) : (match.score_teamA || 0)
+        //   const teamKeptCleanSheet = opponentScore === 0
+        //
+        //   // Only credit if player is a defender, team kept clean sheet, and they don't already have a clean sheet event
+        //   if (isPlayerDefender && teamKeptCleanSheet && matchCleanSheets === 0) {
+        //     matchCleanSheets = 1
+        //   }
+        // }
 
         if (stats) {
           console.log(`Stats for match ${matchPlayer.match?.id}:`, {
@@ -320,8 +363,6 @@ export async function GET(request: NextRequest) {
           aggregatedStats.total_yellow_cards += stats.yellow_cards || 0
           aggregatedStats.total_red_cards += stats.red_cards || 0
           aggregatedStats.total_own_goals += stats.own_goals || 0
-          // Get clean sheets from events for this match
-          const matchCleanSheets = cleanSheetsPerMatch.get(matchPlayer.match.id) || 0
           aggregatedStats.total_clean_sheets += matchCleanSheets
           // Get saves from events for this match
           const matchSaves = savesPerMatch.get(matchPlayer.match.id) || 0
@@ -356,8 +397,6 @@ export async function GET(request: NextRequest) {
         } else {
           // If no stats record exists, assume 90 minutes played
           aggregatedStats.total_minutes += 90
-          // Get clean sheets from events for this match even if no stats record
-          const matchCleanSheets = cleanSheetsPerMatch.get(matchPlayer.match.id) || 0
           aggregatedStats.total_clean_sheets += matchCleanSheets
           // Get saves from events for this match even if no stats record
           const matchSaves = savesPerMatch.get(matchPlayer.match.id) || 0

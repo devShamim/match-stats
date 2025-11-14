@@ -80,8 +80,8 @@ interface MatchDetails {
   clean_sheets: CleanSheet[]
   stats: MatchStats
   match_summary?: string
-  teamAPlayers?: string[]
-  teamBPlayers?: string[]
+  teamAPlayers?: string[] | Array<{ name: string; rating: number | null; playerId: string }>
+  teamBPlayers?: string[] | Array<{ name: string; rating: number | null; playerId: string }>
   teamAName?: string
   teamBName?: string
 }
@@ -92,6 +92,17 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'goals' | 'cards' | 'subs' | 'saves' | 'clean_sheets' | 'stats' | 'ratings' | 'others'>('goals')
   const [playerRatings, setPlayerRatings] = useState<Map<string, number>>(new Map())
+
+  // Helper function to get player name from either string or object format
+  const getPlayerName = (player: string | { name: string; rating: number | null; playerId: string }): string => {
+    return typeof player === 'string' ? player : player.name
+  }
+
+  // Helper function to get player list as array of strings
+  const getPlayerNames = (players?: string[] | Array<{ name: string; rating: number | null; playerId: string }>): string[] => {
+    if (!players) return []
+    return players.map(p => typeof p === 'string' ? p : p.name)
+  }
 
   // State for match info form
   const [matchInfo, setMatchInfo] = useState({
@@ -682,18 +693,18 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                           {/* For own goal, show players from the selected player team */}
                           {isOwnGoal
                             ? (playerTeam === 'A'
-                                ? details.teamAPlayers?.map(player => (
+                                ? getPlayerNames(details.teamAPlayers).map(player => (
                                     <option key={player} value={player}>{player}</option>
                                   ))
-                                : details.teamBPlayers?.map(player => (
+                                : getPlayerNames(details.teamBPlayers).map(player => (
                                     <option key={player} value={player}>{player}</option>
                                   ))
                               )
                             : (goal.team === 'A'
-                                ? details.teamAPlayers?.map(player => (
+                                ? getPlayerNames(details.teamAPlayers).map(player => (
                                     <option key={player} value={player}>{player}</option>
                                   ))
-                                : details.teamBPlayers?.map(player => (
+                                : getPlayerNames(details.teamBPlayers).map(player => (
                                     <option key={player} value={player}>{player}</option>
                                   ))
                               )
@@ -730,10 +741,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                         >
                           <option value="">Select assist provider</option>
                           {goal.team === 'A'
-                            ? details.teamAPlayers?.map(player => (
+                            ? getPlayerNames(details.teamAPlayers).map(player => (
                                 <option key={player} value={player}>{player}</option>
                               ))
-                            : details.teamBPlayers?.map(player => (
+                            : getPlayerNames(details.teamBPlayers).map(player => (
                                 <option key={player} value={player}>{player}</option>
                               ))
                           }
@@ -834,10 +845,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                       >
                         <option value="">Select player</option>
                         {card.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
+                          ? getPlayerNames(details.teamAPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
-                          : details.teamBPlayers?.map(player => (
+                          : getPlayerNames(details.teamBPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
                         }
@@ -922,10 +933,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                       >
                         <option value="">Select player out</option>
                         {sub.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
+                          ? getPlayerNames(details.teamAPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
-                          : details.teamBPlayers?.map(player => (
+                          : getPlayerNames(details.teamBPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
                         }
@@ -942,10 +953,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                       >
                         <option value="">Select player in</option>
                         {sub.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
+                          ? getPlayerNames(details.teamAPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
-                          : details.teamBPlayers?.map(player => (
+                          : getPlayerNames(details.teamBPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
                         }
@@ -1017,10 +1028,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                       >
                         <option value="">Select player</option>
                         {save.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
+                          ? getPlayerNames(details.teamAPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
-                          : details.teamBPlayers?.map(player => (
+                          : getPlayerNames(details.teamBPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
                         }
@@ -1080,10 +1091,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                       >
                         <option value="">Select player</option>
                         {cleanSheet.team === 'A'
-                          ? details.teamAPlayers?.map(player => (
+                          ? getPlayerNames(details.teamAPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
-                          : details.teamBPlayers?.map(player => (
+                          : getPlayerNames(details.teamBPlayers).map(player => (
                               <option key={player} value={player}>{player}</option>
                             ))
                         }
