@@ -9,8 +9,9 @@ import Link from 'next/link'
 import {
   X, Clock, Trophy, Users, Target, Zap, AlertTriangle,
   UserCheck, UserX, Shield, Calendar, MapPin, Star,
-  TrendingUp, Activity, Award, Timer
+  TrendingUp, Activity, Award, Timer, Info
 } from 'lucide-react'
+import { Tooltip } from '@/components/ui/tooltip'
 
 interface MatchDetailsViewProps {
   match: Match | null
@@ -626,6 +627,32 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                   <div className="flex items-center mb-3">
                     <div className="w-3 h-3 bg-blue-600 rounded-full mr-2"></div>
                     <h4 className="font-semibold text-gray-800">{details.teamAName || 'Team A'}</h4>
+                    {(() => {
+                      const teamARatings = details.teamAPlayers
+                        ?.filter(p => typeof p !== 'string' && p.rating !== null)
+                        .map(p => typeof p === 'string' ? null : p.rating)
+                        .filter((r): r is number => r !== null) || []
+                      const avgRating = teamARatings.length > 0
+                        ? teamARatings.reduce((sum, r) => sum + r, 0) / teamARatings.length
+                        : null
+                      if (avgRating === null) return null
+                      const squareColor = avgRating >= 7
+                        ? 'bg-green-500'
+                        : avgRating >= 5
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
+                      return (
+                        <div className="ml-3 flex items-center gap-2">
+                          <div className={`w-3 h-3 ${squareColor} border border-gray-300`}></div>
+                          <span className="font-bold text-sm text-gray-800">
+                            {avgRating.toFixed(2)}
+                          </span>
+                          <Tooltip content="Average rating of all players in this team for this match. Calculated from individual player ratings (0-10 scale).">
+                            <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors cursor-help" />
+                          </Tooltip>
+                        </div>
+                      )
+                    })()}
                   </div>
                   {details.teamAPlayers && details.teamAPlayers.length > 0 ? (
                     <div className="space-y-2">
@@ -647,13 +674,17 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                             </div>
                             {playerRating !== null && (
                               <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
-                                playerRating >= 5
+                                playerRating >= 7
                                   ? 'bg-green-50 border-green-200'
+                                  : playerRating >= 5
+                                  ? 'bg-yellow-50 border-yellow-200'
                                   : 'bg-red-50 border-red-200'
                               }`}>
                                 <span className={`font-bold text-sm ${
-                                  playerRating >= 5
+                                  playerRating >= 7
                                     ? 'text-green-600'
+                                    : playerRating >= 5
+                                    ? 'text-yellow-600'
                                     : 'text-red-600'
                                 }`}>
                                   {playerRating.toFixed(1)}/10
@@ -674,6 +705,32 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                   <div className="flex items-center mb-3">
                     <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
                     <h4 className="font-semibold text-gray-800">{details.teamBName || 'Team B'}</h4>
+                    {(() => {
+                      const teamBRatings = details.teamBPlayers
+                        ?.filter(p => typeof p !== 'string' && p.rating !== null)
+                        .map(p => typeof p === 'string' ? null : p.rating)
+                        .filter((r): r is number => r !== null) || []
+                      const avgRating = teamBRatings.length > 0
+                        ? teamBRatings.reduce((sum, r) => sum + r, 0) / teamBRatings.length
+                        : null
+                      if (avgRating === null) return null
+                      const squareColor = avgRating >= 7
+                        ? 'bg-green-500'
+                        : avgRating >= 5
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
+                      return (
+                        <div className="ml-3 flex items-center gap-2">
+                          <div className={`w-3 h-3 ${squareColor} border border-gray-300`}></div>
+                          <span className="font-bold text-sm text-gray-800">
+                            {avgRating.toFixed(2)}
+                          </span>
+                          <Tooltip content="Average rating of all players in this team for this match. Calculated from individual player ratings (0-10 scale).">
+                            <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors cursor-help" />
+                          </Tooltip>
+                        </div>
+                      )
+                    })()}
                   </div>
                   {details.teamBPlayers && details.teamBPlayers.length > 0 ? (
                     <div className="space-y-2">
@@ -695,13 +752,17 @@ export default function MatchDetailsView({ match, isOpen, onClose }: MatchDetail
                             </div>
                             {playerRating !== null && (
                               <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
-                                playerRating >= 5
+                                playerRating >= 7
                                   ? 'bg-green-50 border-green-200'
+                                  : playerRating >= 5
+                                  ? 'bg-yellow-50 border-yellow-200'
                                   : 'bg-red-50 border-red-200'
                               }`}>
                                 <span className={`font-bold text-sm ${
-                                  playerRating >= 5
+                                  playerRating >= 7
                                     ? 'text-green-600'
+                                    : playerRating >= 5
+                                    ? 'text-yellow-600'
                                     : 'text-red-600'
                                 }`}>
                                   {playerRating.toFixed(1)}/10

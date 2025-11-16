@@ -380,29 +380,68 @@ export default function PlayerStatsPage() {
             </Card>
 
             {/* Average Rating Card */}
-            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10"></div>
-              <CardContent className="relative p-8">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <Star className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-medium text-gray-800">Average Rating</p>
-                    <p className="text-xs text-purple-600 font-medium">Performance</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-4xl font-bold text-gray-900 mb-2">
-                    {stats.average_rating ? stats.average_rating.toFixed(1) : 'N/A'}
-                  </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{width: `${Math.min((stats.average_rating || 0) * 10, 100)}%`}}></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">Out of 10.0</p>
-                </div>
-              </CardContent>
-            </Card>
+            {(() => {
+              const rating = stats.average_rating || 0
+              const isGreen = rating >= 7
+              const isYellow = rating >= 5 && rating < 7
+              const isRed = rating < 5
+
+              const cardBg = isGreen
+                ? 'bg-gradient-to-br from-green-50 to-emerald-50'
+                : isYellow
+                ? 'bg-gradient-to-br from-yellow-50 to-amber-50'
+                : 'bg-gradient-to-br from-red-50 to-rose-50'
+
+              const overlayBg = isGreen
+                ? 'bg-gradient-to-br from-green-400/10 to-emerald-500/10'
+                : isYellow
+                ? 'bg-gradient-to-br from-yellow-400/10 to-amber-500/10'
+                : 'bg-gradient-to-br from-red-400/10 to-rose-500/10'
+
+              const starBg = isGreen
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                : isYellow
+                ? 'bg-gradient-to-r from-yellow-500 to-amber-500'
+                : 'bg-gradient-to-r from-red-500 to-rose-500'
+
+              const performanceText = isGreen
+                ? 'text-green-600'
+                : isYellow
+                ? 'text-yellow-600'
+                : 'text-red-600'
+
+              const progressBar = isGreen
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                : isYellow
+                ? 'bg-gradient-to-r from-yellow-500 to-amber-500'
+                : 'bg-gradient-to-r from-red-500 to-rose-500'
+
+              return (
+                <Card className={`group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl ${cardBg} backdrop-blur-sm overflow-hidden`}>
+                  <div className={`absolute inset-0 ${overlayBg}`}></div>
+                  <CardContent className="relative p-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`p-3 ${starBg} rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                        <Star className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-medium text-gray-800">Average Rating</p>
+                        <p className={`text-xs ${performanceText} font-medium`}>Performance</p>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-4xl font-bold text-gray-900 mb-2">
+                        {stats.average_rating ? stats.average_rating.toFixed(1) : 'N/A'}
+                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className={`${progressBar} h-2 rounded-full`} style={{width: `${Math.min((stats.average_rating || 0) * 10, 100)}%`}}></div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Out of 10.0</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })()}
           </div>
         </div>
 
@@ -465,7 +504,13 @@ export default function PlayerStatsPage() {
                           )}
                           {/* Rating - moved here beside goals and assists */}
                           {match.rating !== null && (
-                            <div className="flex items-center text-purple-600">
+                            <div className={`flex items-center ${
+                              match.rating >= 7
+                                ? 'text-green-600'
+                                : match.rating >= 5
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                            }`}>
                               <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                               <span className="font-medium text-xs sm:text-sm">{match.rating.toFixed(1)}/10</span>
                             </div>

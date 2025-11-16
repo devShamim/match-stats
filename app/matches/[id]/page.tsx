@@ -10,9 +10,10 @@ import { Match } from '@/types'
 import {
   ArrowLeft, Clock, Trophy, Users, Target, Zap, AlertTriangle,
   UserCheck, UserX, Shield, Calendar, MapPin, Star,
-  TrendingUp, Activity, Award, Timer, Edit, Loader2
+  TrendingUp, Activity, Award, Timer, Edit, Loader2, Info
 } from 'lucide-react'
 import Link from 'next/link'
+import { Tooltip } from '@/components/ui/tooltip'
 
 interface Goal {
   id?: string
@@ -434,6 +435,266 @@ export default function MatchDetailsPage() {
           </CardContent>
         </Card>
 
+        {/* Statistics Section */}
+        <Card className="mb-6 border-0 shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Zap className="h-5 w-5 mr-2 text-purple-600" />
+              Match Statistics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Possession */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-700 flex items-center">
+                  <Activity className="h-4 w-4 mr-2" />
+                  Possession
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">{details.teamAName || 'Team A'}</span>
+                    <span className="font-semibold">{details.stats.possession_teamA}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${details.stats.possession_teamA}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">{details.teamBName || 'Team B'}</span>
+                    <span className="font-semibold">{details.stats.possession_teamB}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shots */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-700 flex items-center">
+                  <Target className="h-4 w-4 mr-2" />
+                  Shots
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_teamA}</div>
+                    <div className="text-sm text-gray-600">{details.teamAName || 'Team A'}</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_teamB}</div>
+                    <div className="text-sm text-gray-600">{details.teamBName || 'Team B'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shots on Target */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-700 flex items-center">
+                  <Award className="h-4 w-4 mr-2" />
+                  Shots on Target
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_on_target_teamA}</div>
+                    <div className="text-sm text-gray-600">{details.teamAName || 'Team A'}</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_on_target_teamB}</div>
+                    <div className="text-sm text-gray-600">{details.teamBName || 'Team B'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fouls */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-700 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Fouls
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">{details.stats.fouls_teamA}</div>
+                    <div className="text-sm text-gray-600">{details.teamAName || 'Team A'}</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-900">{details.stats.fouls_teamB}</div>
+                    <div className="text-sm text-gray-600">{details.teamBName || 'Team B'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Team Players */}
+        <Card className="mb-6 border-0 shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Users className="h-5 w-5 mr-2 text-blue-600" />
+              Team Players
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Team A Players */}
+              <div className="space-y-3">
+                <div className="flex items-center mb-3">
+                  <div className="w-3 h-3 bg-blue-600 rounded-full mr-2"></div>
+                  <h4 className="font-semibold text-gray-800">{details.teamAName || 'Team A'}</h4>
+                  {(() => {
+                    const teamARatings = details.teamAPlayers
+                      ?.filter(p => typeof p !== 'string' && p.rating !== null)
+                      .map(p => typeof p === 'string' ? null : p.rating)
+                      .filter((r): r is number => r !== null) || []
+                    const avgRating = teamARatings.length > 0
+                      ? teamARatings.reduce((sum, r) => sum + r, 0) / teamARatings.length
+                      : null
+                    if (avgRating === null) return null
+                    const squareColor = avgRating >= 7
+                      ? 'bg-green-500'
+                      : avgRating >= 5
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                    return (
+                      <div className="ml-3 flex items-center gap-2">
+                        <div className={`w-3 h-3 ${squareColor} border border-gray-300`}></div>
+                        <span className="font-bold text-sm text-gray-800">
+                          {avgRating.toFixed(2)}
+                        </span>
+                        <Tooltip content="Average rating of all players in this team for this match. Calculated from individual player ratings (0-10 scale).">
+                          <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors cursor-help" />
+                        </Tooltip>
+                      </div>
+                    )
+                  })()}
+                </div>
+                {details.teamAPlayers && details.teamAPlayers.length > 0 ? (
+                  <div className="space-y-2">
+                    {details.teamAPlayers.map((player, index) => {
+                      const playerName = typeof player === 'string' ? player : player.name
+                      const playerRating = typeof player === 'string' ? null : player.rating
+                      const playerId = typeof player === 'string' ? null : player.playerId
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                          <div className="flex items-center flex-1">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
+                            {playerId ? (
+                              <Link href={`/player/${playerId}`} className="text-gray-700 hover:text-blue-600 font-medium transition-colors cursor-pointer">
+                                {playerName}
+                              </Link>
+                            ) : (
+                              <span className="text-gray-700">{playerName}</span>
+                            )}
+                          </div>
+                          {playerRating !== null && (
+                            <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
+                              playerRating >= 7
+                                ? 'bg-green-50 border-green-200'
+                                : playerRating >= 5
+                                ? 'bg-yellow-50 border-yellow-200'
+                                : 'bg-red-50 border-red-200'
+                            }`}>
+                              <span className={`font-bold text-sm ${
+                                playerRating >= 7
+                                  ? 'text-green-600'
+                                  : playerRating >= 5
+                                  ? 'text-yellow-600'
+                                  : 'text-red-600'
+                              }`}>
+                                {playerRating.toFixed(1)}/10
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-sm italic">No players assigned</div>
+                )}
+              </div>
+
+              {/* Team B Players */}
+              <div className="space-y-3">
+                <div className="flex items-center mb-3">
+                  <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
+                  <h4 className="font-semibold text-gray-800">{details.teamBName || 'Team B'}</h4>
+                  {(() => {
+                    const teamBRatings = details.teamBPlayers
+                      ?.filter(p => typeof p !== 'string' && p.rating !== null)
+                      .map(p => typeof p === 'string' ? null : p.rating)
+                      .filter((r): r is number => r !== null) || []
+                    const avgRating = teamBRatings.length > 0
+                      ? teamBRatings.reduce((sum, r) => sum + r, 0) / teamBRatings.length
+                      : null
+                    if (avgRating === null) return null
+                    const squareColor = avgRating >= 7
+                      ? 'bg-green-500'
+                      : avgRating >= 5
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                    return (
+                      <div className="ml-3 flex items-center gap-2">
+                        <div className={`w-3 h-3 ${squareColor} border border-gray-300`}></div>
+                        <span className="font-bold text-sm text-gray-800">
+                          {avgRating.toFixed(2)}
+                        </span>
+                        <Tooltip content="Average rating of all players in this team for this match. Calculated from individual player ratings (0-10 scale).">
+                          <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors cursor-help" />
+                        </Tooltip>
+                      </div>
+                    )
+                  })()}
+                </div>
+                {details.teamBPlayers && details.teamBPlayers.length > 0 ? (
+                  <div className="space-y-2">
+                    {details.teamBPlayers.map((player, index) => {
+                      const playerName = typeof player === 'string' ? player : player.name
+                      const playerRating = typeof player === 'string' ? null : player.rating
+                      const playerId = typeof player === 'string' ? null : player.playerId
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                          <div className="flex items-center flex-1">
+                            <div className="w-2 h-2 bg-red-600 rounded-full mr-3"></div>
+                            {playerId ? (
+                              <Link href={`/player/${playerId}`} className="text-gray-700 hover:text-red-600 font-medium transition-colors cursor-pointer">
+                                {playerName}
+                              </Link>
+                            ) : (
+                              <span className="text-gray-700">{playerName}</span>
+                            )}
+                          </div>
+                          {playerRating !== null && (
+                            <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
+                              playerRating >= 7
+                                ? 'bg-green-50 border-green-200'
+                                : playerRating >= 5
+                                ? 'bg-yellow-50 border-yellow-200'
+                                : 'bg-red-50 border-red-200'
+                            }`}>
+                              <span className={`font-bold text-sm ${
+                                playerRating >= 7
+                                  ? 'text-green-600'
+                                  : playerRating >= 5
+                                  ? 'text-yellow-600'
+                                  : 'text-red-600'
+                              }`}>
+                                {playerRating.toFixed(1)}/10
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-sm italic">No players assigned</div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Goals Timeline */}
         {(() => {
           const totalGoals = details.goals.length + (details.own_goals?.length || 0)
@@ -583,97 +844,6 @@ export default function MatchDetailsPage() {
           </Card>
         )}
 
-        {/* Statistics Section */}
-        <Card className="mb-6 border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Zap className="h-5 w-5 mr-2 text-purple-600" />
-              Match Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Possession */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700 flex items-center">
-                  <Activity className="h-4 w-4 mr-2" />
-                  Possession
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{details.teamAName || 'Team A'}</span>
-                    <span className="font-semibold">{details.stats.possession_teamA}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${details.stats.possession_teamA}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{details.teamBName || 'Team B'}</span>
-                    <span className="font-semibold">{details.stats.possession_teamB}%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shots */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700 flex items-center">
-                  <Target className="h-4 w-4 mr-2" />
-                  Shots
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_teamA}</div>
-                    <div className="text-sm text-gray-600">{details.teamAName || 'Team A'}</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_teamB}</div>
-                    <div className="text-sm text-gray-600">{details.teamBName || 'Team B'}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shots on Target */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700 flex items-center">
-                  <Award className="h-4 w-4 mr-2" />
-                  Shots on Target
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_on_target_teamA}</div>
-                    <div className="text-sm text-gray-600">{details.teamAName || 'Team A'}</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{details.stats.shots_on_target_teamB}</div>
-                    <div className="text-sm text-gray-600">{details.teamBName || 'Team B'}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Fouls */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700 flex items-center">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Fouls
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{details.stats.fouls_teamA}</div>
-                    <div className="text-sm text-gray-600">{details.teamAName || 'Team A'}</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{details.stats.fouls_teamB}</div>
-                    <div className="text-sm text-gray-600">{details.teamBName || 'Team B'}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Match Summary */}
         {details.match_summary && (
           <Card className="mb-6 border-0 shadow-xl">
@@ -688,115 +858,6 @@ export default function MatchDetailsPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Team Players */}
-        <Card className="mb-6 border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="h-5 w-5 mr-2 text-blue-600" />
-              Team Players
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Team A Players */}
-              <div className="space-y-3">
-                <div className="flex items-center mb-3">
-                  <div className="w-3 h-3 bg-blue-600 rounded-full mr-2"></div>
-                  <h4 className="font-semibold text-gray-800">{details.teamAName || 'Team A'}</h4>
-                </div>
-                {details.teamAPlayers && details.teamAPlayers.length > 0 ? (
-                  <div className="space-y-2">
-                    {details.teamAPlayers.map((player, index) => {
-                      const playerName = typeof player === 'string' ? player : player.name
-                      const playerRating = typeof player === 'string' ? null : player.rating
-                      const playerId = typeof player === 'string' ? null : player.playerId
-                      return (
-                        <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                          <div className="flex items-center flex-1">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
-                            {playerId ? (
-                              <Link href={`/player/${playerId}`} className="text-gray-700 hover:text-blue-600 font-medium transition-colors cursor-pointer">
-                                {playerName}
-                              </Link>
-                            ) : (
-                              <span className="text-gray-700">{playerName}</span>
-                            )}
-                          </div>
-                          {playerRating !== null && (
-                            <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
-                              playerRating >= 5
-                                ? 'bg-green-50 border-green-200'
-                                : 'bg-red-50 border-red-200'
-                            }`}>
-                              <span className={`font-bold text-sm ${
-                                playerRating >= 5
-                                  ? 'text-green-600'
-                                  : 'text-red-600'
-                              }`}>
-                                {playerRating.toFixed(1)}/10
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 text-sm italic">No players assigned</div>
-                )}
-              </div>
-
-              {/* Team B Players */}
-              <div className="space-y-3">
-                <div className="flex items-center mb-3">
-                  <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
-                  <h4 className="font-semibold text-gray-800">{details.teamBName || 'Team B'}</h4>
-                </div>
-                {details.teamBPlayers && details.teamBPlayers.length > 0 ? (
-                  <div className="space-y-2">
-                    {details.teamBPlayers.map((player, index) => {
-                      const playerName = typeof player === 'string' ? player : player.name
-                      const playerRating = typeof player === 'string' ? null : player.rating
-                      const playerId = typeof player === 'string' ? null : player.playerId
-                      return (
-                        <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
-                          <div className="flex items-center flex-1">
-                            <div className="w-2 h-2 bg-red-600 rounded-full mr-3"></div>
-                            {playerId ? (
-                              <Link href={`/player/${playerId}`} className="text-gray-700 hover:text-red-600 font-medium transition-colors cursor-pointer">
-                                {playerName}
-                              </Link>
-                            ) : (
-                              <span className="text-gray-700">{playerName}</span>
-                            )}
-                          </div>
-                          {playerRating !== null && (
-                            <div className={`ml-2 px-2.5 py-1 rounded-lg border ${
-                              playerRating >= 5
-                                ? 'bg-green-50 border-green-200'
-                                : 'bg-red-50 border-red-200'
-                            }`}>
-                              <span className={`font-bold text-sm ${
-                                playerRating >= 5
-                                  ? 'text-green-600'
-                                  : 'text-red-600'
-                              }`}>
-                                {playerRating.toFixed(1)}/10
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 text-sm italic">No players assigned</div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

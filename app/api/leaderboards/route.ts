@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/auth'
 
+// Unified Scoring System Constants - Adjust these values to modify the scoring system
+const GOALS_POINT = 3
+const ASSIST_POINT = 2
+const SAVES_POINT = 0.5
+const CLEAN_SHEET_POINT_DEFENDER = 3
+const CLEAN_SHEET_POINT_OTHER = 2
+const OWN_GOAL_PENALTY = 2
+const RATING_MULTIPLIER_DEFENDER = 2.6
+const RATING_MULTIPLIER_OTHER = 2
+
 // Helper function to detect if a player is a defender
 function isDefender(position: string | null | undefined): boolean {
   if (!position) return false
@@ -196,21 +206,18 @@ export async function GET() {
         : 0
 
       // Calculate Unified Score
-      // Goals: 3 points, Assists: 2 points, Saves: 0.5 points
-      // Clean Sheets: 3 points for defenders, 2 points for others
-      // Own Goals: -2 points
-      // Match Rating: average_rating × 2 (× 1.5 for defenders)
-      const goalsPoints = playerStats.goals * 3
-      const assistsPoints = playerStats.assists * 2
-      const savesPoints = playerStats.saves * 0.5
-      // Defenders get 3 points per clean sheet, others get 2 points
+      // Using constants defined at the top of the file for easy adjustment
+      const goalsPoints = playerStats.goals * GOALS_POINT
+      const assistsPoints = playerStats.assists * ASSIST_POINT
+      const savesPoints = playerStats.saves * SAVES_POINT
+      // Defenders get more points per clean sheet
       const cleanSheetsPoints = playerStats.is_defender
-        ? playerStats.clean_sheets * 3
-        : playerStats.clean_sheets * 2
-      const ownGoalsPenalty = playerStats.own_goals * 2 // Negative points
-      // Defenders get 1.5x multiplier on match rating
-      const ratingMultiplier = playerStats.is_defender ? 1.5 : 1
-      const matchRatingPoints = (playerStats.average_rating || 0) * 2 * ratingMultiplier
+        ? playerStats.clean_sheets * CLEAN_SHEET_POINT_DEFENDER
+        : playerStats.clean_sheets * CLEAN_SHEET_POINT_OTHER
+      const ownGoalsPenalty = playerStats.own_goals * OWN_GOAL_PENALTY // Negative points
+      // Defenders get rating × 2.6, others get rating × 2
+      const ratingMultiplier = playerStats.is_defender ? RATING_MULTIPLIER_DEFENDER : RATING_MULTIPLIER_OTHER
+      const matchRatingPoints = (playerStats.average_rating || 0) * ratingMultiplier
 
       playerStats.unified_score = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty + matchRatingPoints) * 10) / 10
 
