@@ -126,6 +126,11 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
   const [savingMatchInfo, setSavingMatchInfo] = useState(false)
   const [savingTeamPlayers, setSavingTeamPlayers] = useState(false)
 
+  // Formation and position assignment
+  const [formation, setFormation] = useState<'1-2-2' | '1-2-2-1'>('1-2-2')
+  const [teamAPositions, setTeamAPositions] = useState<Map<string, string>>(new Map())
+  const [teamBPositions, setTeamBPositions] = useState<Map<string, string>>(new Map())
+
   const [details, setDetails] = useState<MatchDetails>({
     goals: [],
     cards: [],
@@ -229,7 +234,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
         }
       }
 
-      // Load current team players
+      // Load current team players and positions
       const teamPlayersResponse = await fetch(`/api/match-details/${match.id}`)
       if (teamPlayersResponse.ok) {
         const teamPlayersData = await teamPlayersResponse.json()
@@ -237,6 +242,39 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
           // Use player IDs for checkboxes, not player names
           setSelectedTeamAPlayers(teamPlayersData.details.teamAPlayerIds || [])
           setSelectedTeamBPlayers(teamPlayersData.details.teamBPlayerIds || [])
+
+          // Load positions from match_players
+          const { data: matchPlayers, error: mpError } = await supabase
+            .from('match_players')
+            .select('player_id, position, team_id')
+            .eq('match_id', match.id)
+
+          if (!mpError && matchPlayers) {
+            const teams = teamPlayersData.details.teamAPlayerIds ?
+              await supabase.from('teams').select('id').eq('match_id', match.id).order('created_at') :
+              { data: null }
+
+            if (teams.data && teams.data.length >= 2) {
+              const teamAId = teams.data[0].id
+              const teamBId = teams.data[1].id
+
+              const teamAPos = new Map<string, string>()
+              const teamBPos = new Map<string, string>()
+
+              matchPlayers.forEach((mp: any) => {
+                if (mp.position) {
+                  if (mp.team_id === teamAId) {
+                    teamAPos.set(mp.player_id, mp.position)
+                  } else if (mp.team_id === teamBId) {
+                    teamBPos.set(mp.player_id, mp.position)
+                  }
+                }
+              })
+
+              setTeamAPositions(teamAPos)
+              setTeamBPositions(teamBPos)
+            }
+          }
         }
       }
 
@@ -478,6 +516,16 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
       // Get the current session to include auth token
       const { data: { session } } = await supabase.auth.getSession()
 
+      // Convert position maps to arrays of {playerId, position}
+      const teamAPositionsArray = Array.from(teamAPositions.entries()).map(([playerId, position]) => ({
+        playerId,
+        position
+      }))
+      const teamBPositionsArray = Array.from(teamBPositions.entries()).map(([playerId, position]) => ({
+        playerId,
+        position
+      }))
+
       const response = await fetch('/api/update-team-players', {
         method: 'PUT',
         headers: {
@@ -487,7 +535,10 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
         body: JSON.stringify({
           matchId: match.id,
           teamA_players: selectedTeamAPlayers,
-          teamB_players: selectedTeamBPlayers
+          teamB_players: selectedTeamBPlayers,
+          teamA_positions: teamAPositionsArray,
+          teamB_positions: teamBPositionsArray,
+          formation: formation
         })
       })
 
@@ -497,7 +548,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
         throw new Error(result.error || 'Failed to update team players')
       }
 
-      showToast('Team players updated successfully!', 'success')
+      showToast('Team players and positions updated successfully!', 'success')
       onSave(result.match)
     } catch (err: any) {
       console.error('Error saving team players:', err)
@@ -1535,34 +1586,87 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Users className="h-5 w-5 mr-2" />
-                    Team Players
+                    Team Players & Formation
                   </CardTitle>
                   <CardDescription>
-                    Assign players to teams
+                    Assign players to teams and set their positions
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Formation Selector */}
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium">Formation:</label>
+                    <select
+                      value={formation}
+                      onChange={(e) => {
+                        const newFormation = e.target.value as '1-2-2' | '1-2-2-1'
+                        setFormation(newFormation)
+                        // Clear positions when formation changes
+                        setTeamAPositions(new Map())
+                        setTeamBPositions(new Map())
+                      }}
+                      className="px-3 py-2 border rounded-md text-sm"
+                    >
+                      <option value="1-2-2">1-2-2 (5 players)</option>
+                      <option value="1-2-2-1">1-2-2-1 (6 players)</option>
+                    </select>
+                    <span className="text-xs text-gray-500">
+                      {formation === '1-2-2' ? '1 GK, 2 DEF, 2 FWD' : '1 GK, 2 DEF, 2 MID, 1 FWD'}
+                    </span>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Team A Players */}
                     <div>
                       <h4 className="font-medium mb-3">{matchInfo.teamA_name || 'Team A'}</h4>
                       <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
                         {allPlayers.map(player => (
-                          <label key={player.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedTeamAPlayers.includes(player.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedTeamAPlayers(prev => [...prev, player.id])
-                                } else {
-                                  setSelectedTeamAPlayers(prev => prev.filter(id => id !== player.id))
-                                }
-                              }}
-                              className="rounded border-gray-300"
-                            />
-                            <span className="text-sm">{player.user_profile?.name || 'Unknown Player'}</span>
-                          </label>
+                          <div key={player.id} className="space-y-1">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedTeamAPlayers.includes(player.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedTeamAPlayers(prev => [...prev, player.id])
+                                  } else {
+                                    setSelectedTeamAPlayers(prev => prev.filter(id => id !== player.id))
+                                    // Remove position when player is deselected
+                                    setTeamAPositions(prev => {
+                                      const newMap = new Map(prev)
+                                      newMap.delete(player.id)
+                                      return newMap
+                                    })
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="text-sm">{player.user_profile?.name || 'Unknown Player'}</span>
+                            </label>
+                            {selectedTeamAPlayers.includes(player.id) && (
+                              <select
+                                value={teamAPositions.get(player.id) || ''}
+                                onChange={(e) => {
+                                  setTeamAPositions(prev => {
+                                    const newMap = new Map(prev)
+                                    if (e.target.value) {
+                                      newMap.set(player.id, e.target.value)
+                                    } else {
+                                      newMap.delete(player.id)
+                                    }
+                                    return newMap
+                                  })
+                                }}
+                                className="ml-6 w-full px-2 py-1 text-xs border rounded-md"
+                              >
+                                <option value="">Select position...</option>
+                                <option value="Goalkeeper">Goalkeeper</option>
+                                <option value="Defender">Defender</option>
+                                {formation === '1-2-2-1' && <option value="Midfielder">Midfielder</option>}
+                                <option value="Forward">Forward</option>
+                              </select>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1572,21 +1676,52 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                       <h4 className="font-medium mb-3">{matchInfo.teamB_name || 'Team B'}</h4>
                       <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
                         {allPlayers.map(player => (
-                          <label key={player.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedTeamBPlayers.includes(player.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedTeamBPlayers(prev => [...prev, player.id])
-                                } else {
-                                  setSelectedTeamBPlayers(prev => prev.filter(id => id !== player.id))
-                                }
-                              }}
-                              className="rounded border-gray-300"
-                            />
-                            <span className="text-sm">{player.user_profile?.name || 'Unknown Player'}</span>
-                          </label>
+                          <div key={player.id} className="space-y-1">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedTeamBPlayers.includes(player.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedTeamBPlayers(prev => [...prev, player.id])
+                                  } else {
+                                    setSelectedTeamBPlayers(prev => prev.filter(id => id !== player.id))
+                                    // Remove position when player is deselected
+                                    setTeamBPositions(prev => {
+                                      const newMap = new Map(prev)
+                                      newMap.delete(player.id)
+                                      return newMap
+                                    })
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="text-sm">{player.user_profile?.name || 'Unknown Player'}</span>
+                            </label>
+                            {selectedTeamBPlayers.includes(player.id) && (
+                              <select
+                                value={teamBPositions.get(player.id) || ''}
+                                onChange={(e) => {
+                                  setTeamBPositions(prev => {
+                                    const newMap = new Map(prev)
+                                    if (e.target.value) {
+                                      newMap.set(player.id, e.target.value)
+                                    } else {
+                                      newMap.delete(player.id)
+                                    }
+                                    return newMap
+                                  })
+                                }}
+                                className="ml-6 w-full px-2 py-1 text-xs border rounded-md"
+                              >
+                                <option value="">Select position...</option>
+                                <option value="Goalkeeper">Goalkeeper</option>
+                                <option value="Defender">Defender</option>
+                                {formation === '1-2-2-1' && <option value="Midfielder">Midfielder</option>}
+                                <option value="Forward">Forward</option>
+                              </select>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

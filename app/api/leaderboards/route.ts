@@ -94,20 +94,24 @@ export async function GET() {
       if (matchPlayer.player?.user_profile?.name) {
         const playerName = matchPlayer.player.user_profile.name
         const playerId = matchPlayer.player.id
-        // Get player position from match_players.position, user_profile.position, or preferred_position
-        const playerPosition = matchPlayer.position ||
-                              matchPlayer.player.user_profile.position ||
+
+        // Use DEFAULT position (from user_profile or preferred_position) - NOT match-specific position
+        // match_players.position is only for that specific match, not the player's default position
+        const defaultPosition = matchPlayer.player.user_profile.position ||
                               matchPlayer.player.preferred_position ||
                               null
-        const isPlayerDefender = isDefender(playerPosition)
+
+        // Match-specific position (for defender detection in this match only)
+        const matchPosition = matchPlayer.position || defaultPosition
+        const isPlayerDefender = isDefender(matchPosition) // Use match position for defender detection
 
         if (!playerStatsMap.has(playerId)) {
           playerStatsMap.set(playerId, {
             id: playerId,
             name: playerName,
             photo_url: matchPlayer.player.user_profile.photo_url,
-            position: playerPosition,
-            is_defender: isPlayerDefender,
+            position: defaultPosition, // Always use default position for display
+            is_defender: isDefender(defaultPosition), // Use default position for defender status
             goals: 0,
             assists: 0,
             own_goals: 0,
@@ -126,10 +130,10 @@ export async function GET() {
         }
 
         const playerStats = playerStatsMap.get(playerId)
-        // Update position if not set
+        // Only update position if not set (use default position, never match-specific)
         if (!playerStats.position) {
-          playerStats.position = playerPosition
-          playerStats.is_defender = isPlayerDefender
+          playerStats.position = defaultPosition
+          playerStats.is_defender = isDefender(defaultPosition)
         }
 
         // Add unique match to set (this ensures we count all matches, not just those with stats)

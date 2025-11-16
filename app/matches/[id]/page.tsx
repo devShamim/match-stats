@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { Tooltip } from '@/components/ui/tooltip'
+import FieldFormation from '@/components/FieldFormation'
 
 interface Goal {
   id?: string
@@ -68,8 +69,28 @@ interface MatchDetails {
   match_summary?: string
   teamAName?: string
   teamBName?: string
-  teamAPlayers?: Array<{ name: string; rating: number | null; playerId: string }> | string[]
-  teamBPlayers?: Array<{ name: string; rating: number | null; playerId: string }> | string[]
+  teamAPlayers?: Array<{
+    name: string
+    rating: number | null
+    playerId: string
+    photoUrl?: string | null
+    position?: string | null
+    jerseyNumber?: number | null
+    goals: number
+    assists: number
+    isSubstituted: boolean
+  }> | string[]
+  teamBPlayers?: Array<{
+    name: string
+    rating: number | null
+    playerId: string
+    photoUrl?: string | null
+    position?: string | null
+    jerseyNumber?: number | null
+    goals: number
+    assists: number
+    isSubstituted: boolean
+  }> | string[]
 }
 
 export default function MatchDetailsPage() {
@@ -525,6 +546,27 @@ export default function MatchDetailsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Field Formation */}
+        {details.teamAPlayers && details.teamBPlayers &&
+         details.teamAPlayers.length > 0 && details.teamBPlayers.length > 0 && (
+          <Card className="mb-6 border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Target className="h-5 w-5 mr-2 text-green-600" />
+                Field Formation
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FieldFormation
+                teamAPlayers={details.teamAPlayers}
+                teamBPlayers={details.teamBPlayers}
+                teamAName={details.teamAName || 'Team A'}
+                teamBName={details.teamBName || 'Team B'}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Team Players */}
         <Card className="mb-6 border-0 shadow-xl">

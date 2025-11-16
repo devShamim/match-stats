@@ -76,19 +76,115 @@ export async function GET(
         const teamBId = teams[1].id
 
         const teamAPlayersData = match.match_players.filter((mp: any) => mp.team_id === teamAId)
-        teamAPlayers = teamAPlayersData.map((mp: any) => ({
-          name: mp.player?.user_profile?.name || 'Unknown',
-          rating: mp.stats?.rating || null,
-          playerId: mp.player?.id || ''
-        })).filter((p: any) => p.name !== 'Unknown') || []
+
+        // Calculate goals and assists per player from match events
+        const teamAPlayerGoals = new Map<string, number>()
+        const teamAPlayerAssists = new Map<string, number>()
+        const teamAPlayerSubstitutions = new Set<string>()
+
+        goals.forEach((goal: any) => {
+          if (goal.team === 'A') {
+            const player = teamAPlayersData.find((mp: any) =>
+              mp.player?.user_profile?.name === goal.scorer
+            )
+            if (player) {
+              teamAPlayerGoals.set(player.player.id, (teamAPlayerGoals.get(player.player.id) || 0) + 1)
+            }
+            if (goal.assist) {
+              const assistPlayer = teamAPlayersData.find((mp: any) =>
+                mp.player?.user_profile?.name === goal.assist
+              )
+              if (assistPlayer) {
+                teamAPlayerAssists.set(assistPlayer.player.id, (teamAPlayerAssists.get(assistPlayer.player.id) || 0) + 1)
+              }
+            }
+          }
+        })
+
+        substitutions.forEach((sub: any) => {
+          if (sub.team === 'A') {
+            const playerOut = teamAPlayersData.find((mp: any) =>
+              mp.player?.user_profile?.name === sub.playerOut
+            )
+            if (playerOut) {
+              teamAPlayerSubstitutions.add(playerOut.player.id)
+            }
+          }
+        })
+
+        teamAPlayers = teamAPlayersData.map((mp: any) => {
+          const playerPosition = mp.position ||
+                                mp.player?.user_profile?.position ||
+                                mp.player?.preferred_position ||
+                                null
+          return {
+            name: mp.player?.user_profile?.name || 'Unknown',
+            rating: mp.stats?.rating || null,
+            playerId: mp.player?.id || '',
+            photoUrl: mp.player?.user_profile?.photo_url || null,
+            position: playerPosition,
+            jerseyNumber: mp.player?.jersey_number || null,
+            goals: teamAPlayerGoals.get(mp.player?.id) || 0,
+            assists: teamAPlayerAssists.get(mp.player?.id) || 0,
+            isSubstituted: teamAPlayerSubstitutions.has(mp.player?.id) || false
+          }
+        }).filter((p: any) => p.name !== 'Unknown') || []
         teamAPlayerIds = teamAPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
 
         const teamBPlayersData = match.match_players.filter((mp: any) => mp.team_id === teamBId)
-        teamBPlayers = teamBPlayersData.map((mp: any) => ({
-          name: mp.player?.user_profile?.name || 'Unknown',
-          rating: mp.stats?.rating || null,
-          playerId: mp.player?.id || ''
-        })).filter((p: any) => p.name !== 'Unknown') || []
+
+        // Calculate goals and assists per player from match events
+        const teamBPlayerGoals = new Map<string, number>()
+        const teamBPlayerAssists = new Map<string, number>()
+        const teamBPlayerSubstitutions = new Set<string>()
+
+        goals.forEach((goal: any) => {
+          if (goal.team === 'B') {
+            const player = teamBPlayersData.find((mp: any) =>
+              mp.player?.user_profile?.name === goal.scorer
+            )
+            if (player) {
+              teamBPlayerGoals.set(player.player.id, (teamBPlayerGoals.get(player.player.id) || 0) + 1)
+            }
+            if (goal.assist) {
+              const assistPlayer = teamBPlayersData.find((mp: any) =>
+                mp.player?.user_profile?.name === goal.assist
+              )
+              if (assistPlayer) {
+                teamBPlayerAssists.set(assistPlayer.player.id, (teamBPlayerAssists.get(assistPlayer.player.id) || 0) + 1)
+              }
+            }
+          }
+        })
+
+        substitutions.forEach((sub: any) => {
+          if (sub.team === 'B') {
+            const playerOut = teamBPlayersData.find((mp: any) =>
+              mp.player?.user_profile?.name === sub.playerOut
+            )
+            if (playerOut) {
+              teamBPlayerSubstitutions.add(playerOut.player.id)
+            }
+          }
+        })
+
+        teamBPlayers = teamBPlayersData.map((mp: any) => {
+          const playerPosition = mp.position ||
+                                mp.player?.user_profile?.position ||
+                                mp.player?.preferred_position ||
+                                null
+          return {
+            name: mp.player?.user_profile?.name || 'Unknown',
+            rating: mp.stats?.rating || null,
+            playerId: mp.player?.id || '',
+            photoUrl: mp.player?.user_profile?.photo_url || null,
+            position: playerPosition,
+            jerseyNumber: mp.player?.jersey_number || null,
+            goals: teamBPlayerGoals.get(mp.player?.id) || 0,
+            assists: teamBPlayerAssists.get(mp.player?.id) || 0,
+            isSubstituted: teamBPlayerSubstitutions.has(mp.player?.id) || false
+          }
+        }).filter((p: any) => p.name !== 'Unknown') || []
         teamBPlayerIds = teamBPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
       }
     } else {

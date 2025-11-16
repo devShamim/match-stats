@@ -13,7 +13,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { matchId, teamA_players, teamB_players } = body
+    const { matchId, teamA_players, teamB_players, teamA_positions, teamB_positions, formation } = body
 
     // Validate required fields
     if (!matchId) {
@@ -62,8 +62,23 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Add new match players
+    // Add new match players with positions
     const matchPlayersToInsert = []
+
+    // Create position maps for quick lookup
+    const teamAPositionMap = new Map<string, string>()
+    if (teamA_positions && Array.isArray(teamA_positions)) {
+      teamA_positions.forEach((item: { playerId: string; position: string }) => {
+        teamAPositionMap.set(item.playerId, item.position)
+      })
+    }
+
+    const teamBPositionMap = new Map<string, string>()
+    if (teamB_positions && Array.isArray(teamB_positions)) {
+      teamB_positions.forEach((item: { playerId: string; position: string }) => {
+        teamBPositionMap.set(item.playerId, item.position)
+      })
+    }
 
     // Add Team A players
     if (teamA_players && Array.isArray(teamA_players)) {
@@ -71,7 +86,8 @@ export async function PUT(request: NextRequest) {
         matchPlayersToInsert.push({
           match_id: matchId,
           player_id: playerId,
-          team_id: teamA.id
+          team_id: teamA.id,
+          position: teamAPositionMap.get(playerId) || null
         })
       }
     }
@@ -82,7 +98,8 @@ export async function PUT(request: NextRequest) {
         matchPlayersToInsert.push({
           match_id: matchId,
           player_id: playerId,
-          team_id: teamB.id
+          team_id: teamB.id,
+          position: teamBPositionMap.get(playerId) || null
         })
       }
     }
