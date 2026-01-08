@@ -337,10 +337,20 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching upcoming matches:', upcomingMatchesError)
     }
 
+    // Get total completed matches count (all matches, not just recent 5)
+    const { count: totalMatchesCount, error: allCompletedMatchesError } = await supabaseAdmin()
+      .from('matches')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+
+    if (allCompletedMatchesError) {
+      console.error('Error fetching total matches count:', allCompletedMatchesError)
+    }
+
     // Calculate overall statistics
     const totalGoals = allPlayerStats.reduce((sum, player) => sum + player.total_goals, 0)
     const totalAssists = allPlayerStats.reduce((sum, player) => sum + player.total_assists, 0)
-    const totalMatches = recentMatches?.length || 0
+    const totalMatches = totalMatchesCount || 0
 
     // Get total registered players count (not just players with stats)
     const { data: allPlayers, error: playersError } = await supabaseAdmin()
