@@ -247,10 +247,16 @@ export default function MatchDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 rounded-b-3xl">
-        <div className="absolute inset-0 bg-black/5">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/3 to-transparent transform -skew-x-12"></div>
-        </div>
+      <div className="relative overflow-hidden rounded-b-3xl">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/soccer-stadium.jpg')" }}
+        />
+        {/* Gradient Overlay - Left side only for text visibility */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
+        {/* Subtle shimmer effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12"></div>
 
         <div className="relative px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -266,7 +272,7 @@ export default function MatchDetailsPage() {
             {isAdmin && (
               <Button
                 onClick={() => router.push(`/matches?edit=${match.id}`)}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 text-sm sm:text-base"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-blue-500 shadow-lg backdrop-blur-sm text-sm sm:text-base font-semibold"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Edit Match</span>
