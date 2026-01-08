@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import PlayerAvatar from '@/components/PlayerAvatar'
-import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save, Star } from 'lucide-react'
+import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface PlayerStats {
   total_goals: number
@@ -59,9 +59,12 @@ export default function PlayerStatsPage() {
   const [stats, setStats] = useState<PlayerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     if (playerId) {
+      setCurrentPage(1) // Reset to first page when player changes
       fetchPlayerData()
     }
   }, [playerId])
@@ -454,12 +457,17 @@ export default function PlayerStatsPage() {
               </div>
               Recent Matches
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Last 5 matches performance</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
+              Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, stats.recent_matches.length)} of {stats.recent_matches.length} matches
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {stats.recent_matches.length > 0 ? (
-              <div className="space-y-3 sm:space-y-4">
-                {stats.recent_matches.map((match, index) => {
+              <>
+                <div className="space-y-3 sm:space-y-4">
+                  {stats.recent_matches
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((match, index) => {
                   const winner = getMatchWinner(match)
                   return (
                     <div key={index} className="p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:from-green-50 hover:to-emerald-50 transition-all duration-300 border border-gray-200 hover:border-green-200">
@@ -557,7 +565,70 @@ export default function PlayerStatsPage() {
                     </div>
                   )
                 })}
-              </div>
+                </div>
+
+                {/* Pagination Controls */}
+                {stats.recent_matches.length > itemsPerPage && (
+                  <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.ceil(stats.recent_matches.length / itemsPerPage) }, (_, i) => i + 1)
+                          .filter(page => {
+                            const totalPages = Math.ceil(stats.recent_matches.length / itemsPerPage)
+                            // Show first page, last page, current page, and pages around current
+                            return page === 1 ||
+                                   page === totalPages ||
+                                   (page >= currentPage - 1 && page <= currentPage + 1)
+                          })
+                          .map((page, idx, arr) => {
+                            // Add ellipsis if there's a gap
+                            const prevPage = arr[idx - 1]
+                            const showEllipsis = prevPage && page - prevPage > 1
+
+                            return (
+                              <div key={page} className="flex items-center gap-1">
+                                {showEllipsis && (
+                                  <span className="px-2 text-gray-500">...</span>
+                                )}
+                                <Button
+                                  variant={currentPage === page ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setCurrentPage(page)}
+                                  className="min-w-[2.5rem]"
+                                >
+                                  {page}
+                                </Button>
+                              </div>
+                            )
+                          })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(stats.recent_matches.length / itemsPerPage), prev + 1))}
+                        disabled={currentPage >= Math.ceil(stats.recent_matches.length / itemsPerPage)}
+                        className="flex items-center gap-1"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Page {currentPage} of {Math.ceil(stats.recent_matches.length / itemsPerPage)}
+                    </p>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

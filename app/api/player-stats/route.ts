@@ -424,10 +424,9 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      // Sort recent matches by date and limit to 5
+      // Sort recent matches by date (most recent first)
       aggregatedStats.recent_matches = aggregatedStats.recent_matches
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5)
 
       // Calculate average rating
       const average_rating = aggregatedStats.rated_matches > 0
