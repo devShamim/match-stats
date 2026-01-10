@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/auth'
 
+// Unified Scoring System Constants - Adjust these values to modify the scoring system
+const GOALS_POINT = 3
+const ASSIST_POINT = 2
+const SAVES_POINT = 0.5
+const CLEAN_SHEET_POINT_DEFENDER = 3
+const CLEAN_SHEET_POINT_OTHER = 2
+const OWN_GOAL_PENALTY = 2
+const RATING_MULTIPLIER_DEFENDER = 2.6
+const RATING_MULTIPLIER_OTHER = 2
+
 // Helper function to detect if a player is a defender
 function isDefender(position: string | null | undefined): boolean {
   if (!position) return false
@@ -311,12 +321,12 @@ export async function GET(request: NextRequest) {
         }>
       }
 
-      // Get player position (from first match player record)
-      const playerPosition = playerStats[0]?.position ||
-                            playerStats[0]?.player?.user_profile?.position ||
+      // Get player DEFAULT position (from user_profile or preferred_position) - NOT match-specific position
+      // This matches the logic in leaderboards API to ensure consistent points calculation
+      const defaultPosition = playerStats[0]?.player?.user_profile?.position ||
                             playerStats[0]?.player?.preferred_position ||
                             null
-      const isPlayerDefender = isDefender(playerPosition)
+      const isPlayerDefender = isDefender(defaultPosition)
 
       // Process each match_player and their stats
       playerStats.forEach((matchPlayer, index) => {
@@ -428,10 +438,25 @@ export async function GET(request: NextRequest) {
       aggregatedStats.recent_matches = aggregatedStats.recent_matches
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-      // Calculate average rating
+      // Calculate average rating (matching leaderboards API format)
       const average_rating = aggregatedStats.rated_matches > 0
-        ? aggregatedStats.total_ratings / aggregatedStats.rated_matches
+        ? Number((aggregatedStats.total_ratings / aggregatedStats.rated_matches).toFixed(2))
         : 0
+
+      // Calculate total points using the same scoring system as leaderboards
+      const goalsPoints = aggregatedStats.total_goals * GOALS_POINT
+      const assistsPoints = aggregatedStats.total_assists * ASSIST_POINT
+      const savesPoints = aggregatedStats.total_saves * SAVES_POINT
+      // Defenders get more points per clean sheet
+      const cleanSheetsPoints = isPlayerDefender
+        ? aggregatedStats.total_clean_sheets * CLEAN_SHEET_POINT_DEFENDER
+        : aggregatedStats.total_clean_sheets * CLEAN_SHEET_POINT_OTHER
+      const ownGoalsPenalty = aggregatedStats.total_own_goals * OWN_GOAL_PENALTY // Negative points
+      // Defenders get rating × 2.6, others get rating × 2
+      const ratingMultiplier = isPlayerDefender ? RATING_MULTIPLIER_DEFENDER : RATING_MULTIPLIER_OTHER
+      const matchRatingPoints = (average_rating || 0) * ratingMultiplier
+
+      const total_points = Math.round((goalsPoints + assistsPoints + savesPoints + cleanSheetsPoints - ownGoalsPenalty + matchRatingPoints) * 10) / 10
 
       // Debug: Log final aggregated stats
       console.log('Final aggregated stats:', {
@@ -443,6 +468,7 @@ export async function GET(request: NextRequest) {
         total_minutes: aggregatedStats.total_minutes,
         matches_played: aggregatedStats.matches_played,
         average_rating: average_rating,
+        total_points: total_points,
         recent_matches_count: aggregatedStats.recent_matches.length
       })
 
@@ -450,7 +476,8 @@ export async function GET(request: NextRequest) {
         success: true,
         stats: {
           ...aggregatedStats,
-          average_rating: average_rating
+          average_rating: average_rating,
+          total_points: total_points
         }
       }, {
         headers: {

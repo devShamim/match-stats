@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import PlayerAvatar from '@/components/PlayerAvatar'
-import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Trophy, Target, Award, Users, Calendar, TrendingUp, Clock, Crown, Shield, Save, Star, ChevronLeft, ChevronRight, Zap } from 'lucide-react'
 
 interface PlayerStats {
   total_goals: number
@@ -20,6 +20,7 @@ interface PlayerStats {
   total_minutes: number
   average_rating: number
   matches_played: number
+  total_points?: number
   recent_matches: Array<{
     match_id: string
     date: string
@@ -334,8 +335,8 @@ export default function PlayerStatsPage() {
             </Card>
           </div>
 
-          {/* Secondary Stats Row - 3 columns: Saves, Clean Sheets, Minutes */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Secondary Stats Row - 4 columns: Saves, Clean Sheets, Average Rating, Points */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Saves Card */}
             <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10"></div>
@@ -445,6 +446,29 @@ export default function PlayerStatsPage() {
                 </Card>
               )
             })()}
+
+            {/* Points Card */}
+            <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-xl bg-gradient-to-br from-indigo-50 to-purple-50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/10 to-purple-500/10"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <Zap className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-gray-800">Points</p>
+                    <p className="text-xs text-indigo-600 font-medium">Earned</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-2">{stats.total_points?.toFixed(1) ?? '0.0'}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" style={{width: `${Math.min(((stats.total_points ?? 0) / Math.max(stats.matches_played * 20, 1)) * 100, 100)}%`}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{stats.matches_played > 0 ? ((stats.total_points ?? 0) / stats.matches_played).toFixed(1) : 0} per match</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
