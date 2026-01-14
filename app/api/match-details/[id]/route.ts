@@ -188,26 +188,19 @@ export async function GET(
         teamBPlayerIds = teamBPlayersData.map((mp: any) => mp.player?.id).filter(Boolean) || []
       }
     } else {
-      // Fallback: Get all players if match_players table doesn't exist
-      const { data: allPlayers, error: playersError } = await supabaseAdmin()
-        .from('players')
-        .select(`
-          *,
-          user_profile:user_profiles(*)
-        `)
-
-      if (!playersError && allPlayers) {
-        const playerData = allPlayers.map(p => ({
-          name: p.user_profile?.name || 'Unknown',
-          rating: null,
-          playerId: p.id
-        })).filter((p: any) => p.name !== 'Unknown')
-        const playerIds = allPlayers.map(p => p.id).filter(Boolean)
-        teamAPlayers = playerData
-        teamBPlayers = playerData
-        teamAPlayerIds = playerIds
-        teamBPlayerIds = playerIds
-      }
+      /**
+       * IMPORTANT:
+       * If no `match_players` exist yet, this match has no assigned players.
+       * Returning all players here makes the UI think every player is selected for BOTH teams.
+       *
+       * So in the "no match_players" case we return empty arrays and let the UI decide:
+       * - for tournament fixtures: default-select from persistent team rosters
+       * - for normal matches: start empty and let admin pick
+       */
+      teamAPlayers = []
+      teamBPlayers = []
+      teamAPlayerIds = []
+      teamBPlayerIds = []
     }
 
 

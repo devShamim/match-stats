@@ -1,0 +1,48 @@
+Tournament feature proposal
+Core concepts
+1. Persistent teams
+Teams exist independently (not just per match)
+Players can be assigned to teams with jersey numbers
+Teams can participate in multiple tournaments
+
+2. Tournament types
+Round Robin: All teams play each other (best for 4-8 teams)
+Knockout: Single elimination bracket (best for 4, 8, 16 teams)
+Hybrid: Group stage + knockout (best for 8+ teams)
+Double Elimination: Fairer, more matches
+
+3. Tournament structure
+Registration phase: Teams register
+Fixture generation: Auto-generate matches based on type
+Standings: Auto-update after each match
+Prize distribution: Automatic calculation + manual override
+
+4. Statistics & prizes
+Team standings (points, wins, goals)
+Player leaderboards (goals, assists, ratings)
+Prize categories:
+Team prizes: 1st, 2nd, 3rd place
+Individual: Top scorer, most assists, best defender, MVP
+
+Database schema
+tournaments - Tournament info
+persistent_teams - Reusable teams
+team_players - Team rosters
+tournament_teams - Teams registered in tournaments
+tournament_standings - Points tables
+tournament_player_stats - Player stats per tournament
+tournament_prizes - Prize tracking
+
+Recommended flow
+1. Create teams → Assign players
+2. Create tournament → Register teams
+3. Generate fixtures → Schedule matches
+4. Play matches → Auto-update standings
+5. Award prizes → Based on statistics
+
+The proposal document (TOURNAMENT_FEATURE_PROPOSAL.md) includes:
+Complete database schema
+API endpoint structure
+UI/UX design
+Implementation phases
+Code examples

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Indoor Football Match Score Sheet</title>
+    <style>
+      :root { --text: #111827; --muted: #6b7280; --line: #e5e7eb; --chip: #f3f4f6; }
+      body { font-family: Arial, Helvetica, sans-serif; color: var(--text); margin: 32px; }
+      h1 { font-size: 20px; margin: 0 0 10px 0; letter-spacing: 0.02em; }
+      h2 { font-size: 14px; margin: 18px 0 8px; }
+      .muted { color: var(--muted); }
+      .box { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 10px 0; }
+      .row { display: flex; flex-wrap: wrap; gap: 10px; }
+      .field { flex: 1 1 240px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+      .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+      .blank { border-bottom: 1px solid var(--text); height: 18px; }
+      .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+      .chip { background: var(--chip); border: 1px solid var(--line); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      th, td { border: 1px solid var(--line); padding: 8px; vertical-align: top; }
+      th { background: #fafafa; font-size: 12px; text-align: left; }
+      td { height: 26px; }
+      .small { font-size: 12px; }
+      .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media print {
+        body { margin: 14mm; }
+        .box { break-inside: avoid; }
+        table { break-inside: auto; }
+        tr { break-inside: avoid; break-after: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>INDOOR FOOTBALL MATCH SCORE SHEET</h1>
+    <div class="muted small">Print one sheet per match. Fill in rosters + stats during the match.</div>
+
+    <div class="box">
+      <h2>Match Info</h2>
+      <div class="row">
+        <div class="field">
+          <div class="label">Tournament</div>
+          <div class="blank"></div>
+          <div class="chips">
+            <span class="chip">Type: ☐ Round Robin</span>
+            <span class="chip">☐ Double Round Robin</span>
+            <span class="chip">☐ Knockout</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="label">Round</div>
+          <div class="chips">
+            <span class="chip">☐ Group</span>
+            <span class="chip">☐ Final</span>
+          </div>
+          <div class="label" style="margin-top:10px;">Fixture # (optional)</div>
+          <div class="blank"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <div class="label">Date</div>
+          <div class="blank"></div>
+        </div>
+        <div class="field">
+          <div class="label">Time</div>
+          <div class="blank"></div>
+        </div>
+        <div class="field">
+          <div class="label">Location</div>
+          <div class="blank"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <div class="label">Team A</div>
+          <div class="blank"></div>
+        </div>
+        <div class="field">
+          <div class="label">Team B</div>
+          <div class="blank"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <div class="label">Recorder</div>
+          <div class="blank"></div>
+        </div>
+        <div class="field">
+          <div class="label">Referee (optional)</div>
+          <div class="blank"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>Final Score</h2>
+      <div class="row">
+        <div class="field">
+          <div class="label">Team A Goals</div>
+          <div class="blank"></div>
+        </div>
+        <div class="field">
+          <div class="label">Team B Goals</div>
+          <div class="blank"></div>
+        </div>
+      </div>
+      <div class="muted small">Tip: record assists next to goals immediately (most commonly forgotten).</div>
+    </div>
+
+    <div class="two">
+      <div class="box">
+        <h2>Team A Roster & Stats</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Player Name</th>
+              <th style="width:90px;">Position</th>
+              <th style="width:56px;">Goals</th>
+              <th style="width:60px;">Assists</th>
+              <th style="width:56px;">Saves</th>
+              <th style="width:84px;">Clean Sheet<br/><span class="muted">(Y/N)</span></th>
+              <th style="width:72px;">Rating<br/><span class="muted">(1–10)</span></th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="box">
+        <h2>Team B Roster & Stats</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Player Name</th>
+              <th style="width:90px;">Position</th>
+              <th style="width:56px;">Goals</th>
+              <th style="width:60px;">Assists</th>
+              <th style="width:56px;">Saves</th>
+              <th style="width:84px;">Clean Sheet<br/><span class="muted">(Y/N)</span></th>
+              <th style="width:72px;">Rating<br/><span class="muted">(1–10)</span></th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>Event Timeline (Recommended)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px;">Minute</th>
+            <th style="width:120px;">Team</th>
+            <th style="width:220px;">Player</th>
+            <th style="width:220px;">Event</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+          <tr><td></td><td></td><td></td><td>Goal / Assist / Save / Other</td><td></td></tr>
+        </tbody>
+      </table>
+      <div class="muted small" style="margin-top:10px;">
+        Ratings: choose a consistent scale (e.g., 1–10, no halves or halves allowed—just be consistent).
+      </div>
+    </div>
+  </body>
+</html>
+

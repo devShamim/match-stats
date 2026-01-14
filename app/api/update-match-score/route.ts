@@ -55,6 +55,27 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // If match is completed and belongs to a tournament, recalculate standings
+    // This will also automatically generate a final match if all group stage matches are done
+    if (status === 'completed' && matchData?.tournament_id) {
+      try {
+        // Get the base URL from the request
+        const protocol = request.headers.get('x-forwarded-proto') || 'http'
+        const host = request.headers.get('host') || 'localhost:3000'
+        const baseUrl = `${protocol}://${host}`
+
+        await fetch(`${baseUrl}/api/tournaments/${matchData.tournament_id}/standings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+      } catch (error) {
+        console.error('Error recalculating tournament standings:', error)
+        // Don't fail the match update if standings recalculation fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       match: matchData

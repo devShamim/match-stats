@@ -110,3 +110,114 @@ export interface RegistrationData {
   position?: string
   phone?: string
 }
+
+// Tournament Types
+export interface PersistentTeam {
+  id: string
+  name: string
+  logo_url?: string
+  color?: string
+  captain_id?: string
+  created_by: string
+  created_at: string
+  updated_at: string
+  captain?: Player
+  players?: TeamPlayer[]
+}
+
+export interface TeamPlayer {
+  id: string
+  team_id: string
+  player_id: string
+  jersey_number?: number
+  position?: string
+  is_captain: boolean
+  joined_at: string
+  player?: Player
+}
+
+export interface Tournament {
+  id: string
+  name: string
+  description?: string
+  type: 'round_robin' | 'knockout' | 'hybrid' | 'double_round_robin'
+  status: 'draft' | 'registration' | 'in_progress' | 'completed' | 'cancelled'
+  start_date?: string
+  end_date?: string
+  max_teams?: number
+  min_players_per_team: number
+  max_players_per_team: number
+  points_per_win: number
+  points_per_draw: number
+  points_per_loss: number
+  prize_structure?: Record<string, number | string>
+  created_by: string
+  created_at: string
+  updated_at: string
+  teams?: TournamentTeam[]
+  standings?: TournamentStanding[]
+}
+
+export interface TournamentTeam {
+  id: string
+  tournament_id: string
+  team_id: string
+  group_name?: string
+  seed?: number
+  status: 'registered' | 'active' | 'eliminated' | 'withdrawn'
+  registered_at: string
+  team?: PersistentTeam
+}
+
+export interface TournamentStanding {
+  id: string
+  tournament_id: string
+  team_id: string
+  group_name?: string
+  matches_played: number
+  wins: number
+  draws: number
+  losses: number
+  goals_for: number
+  goals_against: number
+  goal_difference: number
+  points: number
+  position?: number
+  updated_at: string
+  team?: PersistentTeam
+}
+
+export interface TournamentPlayerStat {
+  id: string
+  tournament_id: string
+  player_id: string
+  team_id: string
+  matches_played: number
+  goals: number
+  assists: number
+  clean_sheets: number
+  saves: number
+  yellow_cards: number
+  red_cards: number
+  average_rating?: number
+  unified_score: number
+  updated_at: string
+  player?: Player
+  team?: PersistentTeam
+}
+
+export interface TournamentPrize {
+  id: string
+  tournament_id: string
+  category: string
+  rank?: number
+  recipient_type: 'team' | 'player'
+  recipient_team_id?: string
+  recipient_player_id?: string
+  prize_amount?: number
+  prize_description?: string
+  awarded_at?: string
+  created_at: string
+  recipient_team?: PersistentTeam
+  recipient_player?: Player
+}

@@ -121,6 +121,9 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
 
   // State for team players
   const [allPlayers, setAllPlayers] = useState<any[]>([])
+  // For tournament fixtures we want each column to show ONLY that team's roster
+  const [teamAPlayerPool, setTeamAPlayerPool] = useState<any[]>([])
+  const [teamBPlayerPool, setTeamBPlayerPool] = useState<any[]>([])
   const [selectedTeamAPlayers, setSelectedTeamAPlayers] = useState<string[]>([])
   const [selectedTeamBPlayers, setSelectedTeamBPlayers] = useState<string[]>([])
   const [savingMatchInfo, setSavingMatchInfo] = useState(false)
@@ -161,10 +164,24 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
     }
   }, [match, isOpen])
 
+  const normalizeName = (s: unknown) =>
+    String(s || '')
+      .trim()
+      .toLowerCase()
+
   const loadMatchDetails = async () => {
     if (!match) return
 
     try {
+      // Reset per-match UI state to avoid leaking selection between matches
+      setAllPlayers([])
+      setTeamAPlayerPool([])
+      setTeamBPlayerPool([])
+      setSelectedTeamAPlayers([])
+      setSelectedTeamBPlayers([])
+      setTeamAPositions(new Map())
+      setTeamBPositions(new Map())
+
       // Load match details
       const response = await fetch(`/api/match-details/${match.id}?t=${Date.now()}`)
       if (response.ok) {
@@ -211,6 +228,9 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
 
       // Load match info for the form
       const matchDate = new Date(match.date)
+      const teamAName = (match as any).teamA_name || ''
+      const teamBName = (match as any).teamB_name || ''
+
       setMatchInfo({
         date: matchDate.toISOString().split('T')[0],
         time: matchDate.toTimeString().split(' ')[0].substring(0, 5),
@@ -220,28 +240,103 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
         status: match.status || 'scheduled',
         score_teamA: (match as any).score_teama || 0,
         score_teamB: (match as any).score_teamb || 0,
-        teamA_name: (match as any).teamA_name || '',
-        teamB_name: (match as any).teamB_name || '',
+        teamA_name: teamAName,
+        teamB_name: teamBName,
         match_summary: (match as any).match_summary || ''
       })
 
-      // Load all players
+      /**
+       * Player pools:
+       * - For tournament/fixture matches with teamA_name + teamB_name matching persistent teams:
+       *   Each column should show ONLY that team's roster, and default-select those players.
+       * - For non-tournament matches:
+       *   Show all players and rely on saved match assignment (or empty).
+       */
+      const isTournamentMatch = Boolean((match as any).tournament_id) || Boolean((match as any).is_fixture)
+
+      // Always fetch full player list once (we'll filter into pools)
+      let allPlayersFull: any[] = []
       const playersResponse = await fetch('/api/players')
       if (playersResponse.ok) {
         const playersData = await playersResponse.json()
-        if (playersData.success) {
-          setAllPlayers(playersData.players)
+        if (playersData.success) allPlayersFull = playersData.players || []
+      }
+
+      let teamARosterIds: string[] = []
+      let teamBRosterIds: string[] = []
+
+      if (teamAName && teamBName) {
+        try {
+          const teamsResponse = await fetch('/api/teams')
+          if (teamsResponse.ok) {
+            const teamsData = await teamsResponse.json()
+
+            const teamA = (teamsData.teams || []).find(
+              (t: any) => normalizeName(t.name) === normalizeName(teamAName)
+            )
+            const teamB = (teamsData.teams || []).find(
+              (t: any) => normalizeName(t.name) === normalizeName(teamBName)
+            )
+
+            teamARosterIds = (teamA?.players || [])
+              .map((tp: any) => tp.player_id)
+              .filter(Boolean)
+
+            teamBRosterIds = (teamB?.players || [])
+              .map((tp: any) => tp.player_id)
+              .filter(Boolean)
+          }
+        } catch (e) {
+          console.error('Error loading persistent team rosters:', e)
         }
       }
+
+      // Build per-team pools for display
+      const teamASet = new Set(teamARosterIds)
+      const teamBSet = new Set(teamBRosterIds)
+
+      const poolA = allPlayersFull.filter((p: any) => teamASet.has(p.id))
+      const poolB = allPlayersFull.filter((p: any) => teamBSet.has(p.id))
+
+      // Union for tabs like Ratings (uses selectedTeamAPlayers/selectedTeamBPlayers filtering)
+      const unionMap = new Map<string, any>()
+      ;[...poolA, ...poolB].forEach((p: any) => unionMap.set(p.id, p))
+      const unionPlayers = Array.from(unionMap.values())
+
+      // If no rosters found, fall back to all players for non-tournament matches
+      const shouldUseRosters = isTournamentMatch && poolA.length > 0 && poolB.length > 0
+      setTeamAPlayerPool(shouldUseRosters ? poolA : allPlayersFull)
+      setTeamBPlayerPool(shouldUseRosters ? poolB : allPlayersFull)
+      setAllPlayers(shouldUseRosters ? unionPlayers : allPlayersFull)
 
       // Load current team players and positions
       const teamPlayersResponse = await fetch(`/api/match-details/${match.id}`)
       if (teamPlayersResponse.ok) {
         const teamPlayersData = await teamPlayersResponse.json()
         if (teamPlayersData.success && teamPlayersData.details) {
-          // Use player IDs for checkboxes, not player names
-          setSelectedTeamAPlayers(teamPlayersData.details.teamAPlayerIds || [])
-          setSelectedTeamBPlayers(teamPlayersData.details.teamBPlayerIds || [])
+          // Get player IDs from match details
+          const teamAPlayerIds = teamPlayersData.details.teamAPlayerIds || []
+          const teamBPlayerIds = teamPlayersData.details.teamBPlayerIds || []
+
+          // For tournament matches: default select team rosters if no saved assignments exist yet
+          const savedA = teamAPlayerIds.filter((id: string) => teamASet.has(id))
+          const savedB = teamBPlayerIds.filter((id: string) => teamBSet.has(id))
+
+          if (shouldUseRosters) {
+            const defaultA = savedA.length > 0 ? savedA : teamARosterIds
+            const defaultB = savedB.length > 0 ? savedB : teamBRosterIds
+
+            // Prevent accidental overlap (shouldn't happen, but safe)
+            const aChosen = new Set(defaultA)
+            const bChosen = defaultB.filter((id: string) => !aChosen.has(id))
+
+            setSelectedTeamAPlayers(defaultA)
+            setSelectedTeamBPlayers(bChosen)
+          } else {
+            // Non-tournament: use saved assignments (or empty)
+            setSelectedTeamAPlayers(teamAPlayerIds)
+            setSelectedTeamBPlayers(teamBPlayerIds)
+          }
 
           // Load positions from match_players
           const { data: matchPlayers, error: mpError } = await supabase
@@ -1620,7 +1715,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                     <div>
                       <h4 className="font-medium mb-3">{matchInfo.teamA_name || 'Team A'}</h4>
                       <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                        {allPlayers.map(player => (
+                        {teamAPlayerPool.map(player => (
                           <div key={player.id} className="space-y-1">
                             <label className="flex items-center space-x-2">
                               <input
@@ -1675,7 +1770,7 @@ export default function MatchDetailsModal({ match, isOpen, onClose, onSave }: Ma
                     <div>
                       <h4 className="font-medium mb-3">{matchInfo.teamB_name || 'Team B'}</h4>
                       <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                        {allPlayers.map(player => (
+                        {teamBPlayerPool.map(player => (
                           <div key={player.id} className="space-y-1">
                             <label className="flex items-center space-x-2">
                               <input

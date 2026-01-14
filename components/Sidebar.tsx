@@ -17,14 +17,18 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  Target
+  LineChart,
+  Crown,
+  Shield
 } from 'lucide-react'
 
 const navigation = [
-  { name: 'Statistics', href: '/stats', icon: Target },
+  { name: 'Statistics', href: '/stats', icon: LineChart },
   { name: 'Players', href: '/players', icon: Users },
   { name: 'Matches', href: '/matches', icon: Calendar },
-  { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
+  { name: 'Teams', href: '/teams', icon: Shield },
+  { name: 'Tournaments', href: '/tournaments', icon: Trophy },
+  { name: 'Leaderboards', href: '/leaderboards', icon: Crown },
 ]
 
 const adminNavigation = [
