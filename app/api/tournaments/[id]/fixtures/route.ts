@@ -120,8 +120,11 @@ export async function POST(
       matchDate.setDate(baseDate.getDate() + i) // Space matches by 1 day
 
       // Get team names
-      const teamA = tournamentTeams.find(tt => tt.team_id === fixture.teamA)?.team
-      const teamB = tournamentTeams.find(tt => tt.team_id === fixture.teamB)?.team
+      // Supabase nested selects may type as array; normalize to a single object.
+      const teamAJoined = tournamentTeams.find(tt => tt.team_id === fixture.teamA)?.team as any
+      const teamBJoined = tournamentTeams.find(tt => tt.team_id === fixture.teamB)?.team as any
+      const teamA = Array.isArray(teamAJoined) ? teamAJoined[0] : teamAJoined
+      const teamB = Array.isArray(teamBJoined) ? teamBJoined[0] : teamBJoined
 
       if (!teamA || !teamB) continue
 

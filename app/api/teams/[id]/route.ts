@@ -40,7 +40,9 @@ export async function GET(
         )
       `)
       .eq('team_id', teamId)
-      .order('jersey_number', { ascending: true, nullsLast: true })
+      // Supabase JS typings support `nullsFirst` (not `nullsLast`).
+      // Setting `nullsFirst: false` yields "NULLS LAST" behavior.
+      .order('jersey_number', { ascending: true, nullsFirst: false })
 
     if (playersError) {
       console.error('Error fetching team players:', playersError)
@@ -82,7 +84,7 @@ export async function PUT(
     // Check if team exists
     const { data: existingTeam } = await supabaseAdmin()
       .from('persistent_teams')
-      .select('id')
+      .select('id, name')
       .eq('id', teamId)
       .single()
 

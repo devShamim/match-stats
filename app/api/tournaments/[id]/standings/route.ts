@@ -124,19 +124,34 @@ export async function POST(
         continue
       }
 
+      const normalizeName = (name: string) => name.toLowerCase().trim()
+      const getTournamentTeamName = (tt: any) => {
+        // Supabase nested select may type as array; normalize.
+        const teamJoined = tt?.team
+        const teamObj = Array.isArray(teamJoined) ? teamJoined[0] : teamJoined
+        return teamObj?.name ? normalizeName(teamObj.name) : null
+      }
+
       // Find which persistent team this match team belongs to by name (case-insensitive, trimmed)
       const teamA_persistent = tournamentTeams.find(tt =>
-        tt.team?.name?.toLowerCase().trim() === teamA_name.toLowerCase().trim()
+        getTournamentTeamName(tt) === normalizeName(teamA_name)
       )
       const teamB_persistent = tournamentTeams.find(tt =>
-        tt.team?.name?.toLowerCase().trim() === teamB_name.toLowerCase().trim()
+        getTournamentTeamName(tt) === normalizeName(teamB_name)
       )
 
       if (!teamA_persistent || !teamB_persistent) {
         console.warn(`Could not find persistent teams for match ${match.id}:`, {
           teamA_name,
           teamB_name,
-          availableTeams: tournamentTeams.map(tt => ({ id: tt.team_id, name: tt.team?.name }))
+          availableTeams: tournamentTeams.map((tt: any) => ({
+            id: tt.team_id,
+            name: (() => {
+              const teamJoined = tt?.team
+              const teamObj = Array.isArray(teamJoined) ? teamJoined[0] : teamJoined
+              return teamObj?.name || null
+            })()
+          }))
         })
         continue
       }
@@ -188,7 +203,8 @@ export async function POST(
 
     // Update standings in database
     console.log(`Updating standings for ${standingsMap.size} teams`)
-    for (const [teamId, stats] of standingsMap.entries()) {
+    // Avoid downlevelIteration requirement by iterating an array snapshot of entries
+    for (const [teamId, stats] of Array.from(standingsMap.entries())) {
       const points = (stats.wins * pointsPerWin) + (stats.draws * pointsPerDraw) + (stats.losses * pointsPerLoss)
       const goalDifference = stats.goals_for - stats.goals_against
 
@@ -310,8 +326,11 @@ export async function POST(
           .limit(2)
 
         if (topTeams && topTeams.length === 2) {
-          const teamA = topTeams[0].team
-          const teamB = topTeams[1].team
+          // Supabase nested selects may type as arrays; normalize to a single object.
+          const teamAJoined = (topTeams[0] as any).team
+          const teamBJoined = (topTeams[1] as any).team
+          const teamA = Array.isArray(teamAJoined) ? teamAJoined[0] : teamAJoined
+          const teamB = Array.isArray(teamBJoined) ? teamBJoined[0] : teamBJoined
 
           if (teamA && teamB) {
             // Get the last match date to schedule final after it

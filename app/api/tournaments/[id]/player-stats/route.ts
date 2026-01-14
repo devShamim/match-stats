@@ -64,8 +64,14 @@ export async function GET(
       if (!mp.player_id || !mp.player) return
 
       const playerId = mp.player_id
-      const playerName = mp.player.user_profile?.name || 'Unknown'
-      const photoUrl = mp.player.user_profile?.photo_url
+      // Supabase nested selects may type as arrays; normalize joins to a single object.
+      const playerJoined = mp.player as any
+      const playerObj = Array.isArray(playerJoined) ? playerJoined[0] : playerJoined
+      const profileJoined = playerObj?.user_profile as any
+      const profileObj = Array.isArray(profileJoined) ? profileJoined[0] : profileJoined
+
+      const playerName = profileObj?.name || 'Unknown'
+      const photoUrl = profileObj?.photo_url
 
       if (!playerStatsMap.has(playerId)) {
         playerStatsMap.set(playerId, {
