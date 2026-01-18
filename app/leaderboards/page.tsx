@@ -77,8 +77,8 @@ export default function LeaderboardsPage() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
-            {icon}
-            {title}
+          {icon}
+          {title}
           </div>
           {title === 'Top Performers' && (
             <Tooltip content="Unified scoring: Goals (3pts), Assists (2pts), Saves (0.5pts), Clean Sheets (2pts), Own Goals (-2pts)">
@@ -87,9 +87,9 @@ export default function LeaderboardsPage() {
           )}
         </CardTitle>
         {title !== 'Top Performers' && (
-          <CardDescription>
-            {title.toLowerCase()}
-          </CardDescription>
+        <CardDescription>
+          {title.toLowerCase()}
+        </CardDescription>
         )}
       </CardHeader>
       <CardContent>

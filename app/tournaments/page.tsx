@@ -78,6 +78,8 @@ export default function TournamentsPage() {
     switch (type) {
       case 'round_robin':
         return 'Round Robin'
+      case 'double_round_robin':
+        return 'Double Round Robin'
       case 'knockout':
         return 'Knockout'
       case 'hybrid':
@@ -96,14 +98,17 @@ export default function TournamentsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Tournaments</h1>
           <p className="text-gray-600">Manage and view tournaments</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => router.push('/tournaments/create')}>
+          <Button
+            onClick={() => router.push('/tournaments/create')}
+            className="w-full md:w-auto"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Create Tournament
           </Button>
@@ -111,7 +116,7 @@ export default function TournamentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex gap-4">
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
@@ -125,7 +130,7 @@ export default function TournamentsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full md:w-48 px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All Status</option>
           <option value="draft">Draft</option>
@@ -150,14 +155,16 @@ export default function TournamentsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
           {filteredTournaments.map((tournament) => (
             <Link key={tournament.id} href={`/tournaments/${tournament.id}`}>
               <Card className="bg-white border-gray-200 hover:border-gray-300 transition-colors cursor-pointer h-full shadow-sm hover:shadow-md">
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
-                    <CardTitle className="text-gray-900">{tournament.name}</CardTitle>
-                    <Badge className={getStatusColor(tournament.status)}>
+                    <CardTitle className="text-gray-900 pr-3">
+                      {tournament.name}
+                    </CardTitle>
+                    <Badge className={`${getStatusColor(tournament.status)} shrink-0 whitespace-nowrap`}>
                       {tournament.status.replace('_', ' ')}
                     </Badge>
                   </div>

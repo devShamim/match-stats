@@ -304,12 +304,14 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
 
     // Get recent matches (last 5 matches)
+    // Only include matches that are actually happening or finished (exclude scheduled).
     const { data: recentMatches, error: recentMatchesError } = await supabaseAdmin()
       .from('matches')
       .select(`
         *,
         teams(*)
       `)
+      .in('status', ['completed', 'in_progress'])
       .order('date', { ascending: false })
       .limit(5)
 

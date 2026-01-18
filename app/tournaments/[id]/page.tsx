@@ -493,8 +493,10 @@ export default function TournamentDetailsPage() {
   const teamsNotRegistered = availableTeams.filter(t => !registeredTeamIds.includes(t.id))
 
   // Find final match and winner
-  const finalMatch = tournamentMatches.find((m: any) => m.round === 'final') ||
-                     (tournamentMatches.length > 0 ? tournamentMatches[tournamentMatches.length - 1] : null)
+  // Only treat a match as "final" if its round is explicitly marked as 'final'.
+  // (Previously we fell back to the last match in the list, which made the UI
+  //  show a fake Championship Match immediately after generating group fixtures.)
+  const finalMatch = tournamentMatches.find((m: any) => m.round === 'final') || null
 
   let finalWinner: string | null = null
   if (finalMatch && finalMatch.status === 'completed') {
@@ -510,6 +512,10 @@ export default function TournamentDetailsPage() {
   }
 
   const groupMatches = tournamentMatches.filter((m: any) => m.round !== 'final')
+  const showFinalPlaceholder =
+    !finalMatch &&
+    tournament.type === 'double_round_robin' &&
+    groupMatches.length > 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
@@ -522,19 +528,19 @@ export default function TournamentDetailsPage() {
         </Link>
 
         {/* Hero Section with Tournament Name */}
-        <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 shadow-2xl">
+        <div className="relative mb-6 sm:mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 shadow-2xl">
           <div className="absolute inset-0 bg-black/10">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12"></div>
           </div>
-          <div className="relative px-8 py-12">
-            <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="relative px-6 py-8 sm:px-8 sm:py-12">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                    <Trophy className="h-8 w-8 text-yellow-300" />
+                  <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                    <Trophy className="h-7 w-7 sm:h-8 sm:w-8 text-yellow-300" />
                   </div>
                   <div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
                       {tournament.name}
                     </h1>
                     <Badge className={`${getStatusColor(tournament.status)} bg-white/20 backdrop-blur-sm border-white/30 text-white`}>
@@ -543,21 +549,21 @@ export default function TournamentDetailsPage() {
                   </div>
                 </div>
                 {tournament.description && (
-                  <p className="text-white/90 text-lg mb-4 max-w-2xl">
+                  <p className="text-white/90 text-base sm:text-lg mb-4 max-w-2xl">
                     {tournament.description}
                   </p>
                 )}
-                <div className="flex flex-wrap gap-6 text-white/90">
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-6 text-white/90">
+                  <div className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                     <Trophy className="h-5 w-5" />
                     <span className="font-medium">{tournament.type.replace('_', ' ')}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <div className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                     <Users className="h-5 w-5" />
                     <span className="font-medium">{tournament.teams?.length || 0} Teams</span>
                   </div>
                   {tournament.start_date && (
-                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <div className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                       <Calendar className="h-5 w-5" />
                       <span className="font-medium">{new Date(tournament.start_date).toLocaleDateString()}</span>
                     </div>
@@ -565,33 +571,60 @@ export default function TournamentDetailsPage() {
                 </div>
               </div>
               {isAdmin && (
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                   {tournament.status === 'draft' && (
                     <Button
-                      onClick={() => {
-                        const session = supabase.auth.getSession().then(s => {
-                          if (s.data.session) {
-                            fetch(`/api/tournaments/${tournamentId}`, {
-                              method: 'PUT',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${s.data.session.access_token}`
-                              },
-                              body: JSON.stringify({ status: 'registration' })
-                            }).then(() => fetchTournament(tournamentId))
-                          }
+                      onClick={async () => {
+                        const session = await supabase.auth.getSession()
+                        if (!session.data.session) {
+                          showToast('You must be logged in', 'error')
+                          return
+                        }
+                        await fetch(`/api/tournaments/${tournamentId}`, {
+                          method: 'PUT',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.data.session.access_token}`
+                          },
+                          body: JSON.stringify({ status: 'registration' })
                         })
+                        fetchTournament(tournamentId)
                       }}
                       size="sm"
-                      className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/30"
+                      className="w-full sm:w-auto bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/30"
                     >
                       Open Registration
+                    </Button>
+                  )}
+                  {tournament.status === 'registration' && (
+                    <Button
+                      onClick={async () => {
+                        const session = await supabase.auth.getSession()
+                        if (!session.data.session) {
+                          showToast('You must be logged in', 'error')
+                          return
+                        }
+                        await fetch(`/api/tournaments/${tournamentId}`, {
+                          method: 'PUT',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.data.session.access_token}`
+                          },
+                          body: JSON.stringify({ status: 'in_progress' })
+                        })
+                        showToast('Registration closed', 'success')
+                        fetchTournament(tournamentId)
+                      }}
+                      size="sm"
+                      className="w-full sm:w-auto bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/30"
+                    >
+                      Close Registration
                     </Button>
                   )}
                   <Button
                     onClick={() => setShowEditModal(true)}
                     size="sm"
-                    className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/30"
+                    className="w-full sm:w-auto bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/30"
                   >
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit
@@ -599,7 +632,7 @@ export default function TournamentDetailsPage() {
                   <Button
                     onClick={() => setShowDeleteModal(true)}
                     size="sm"
-                    className="bg-red-500/20 backdrop-blur-sm hover:bg-red-500/30 text-white border-red-300/30"
+                    className="w-full sm:w-auto bg-red-500/20 backdrop-blur-sm hover:bg-red-500/30 text-white border-red-300/30"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -690,9 +723,45 @@ export default function TournamentDetailsPage() {
           </div>
         )}
 
-        {/* Tournament Header - Moved below hero for admin actions */}
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 rounded-2xl">
-        <CardHeader>
+        {/* Final Match Placeholder (before final is actually scheduled) */}
+        {showFinalPlaceholder && (
+          <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-xl">
+            <div className="absolute inset-0 bg-black/10">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12"></div>
+            </div>
+            <div className="relative px-8 py-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                  <Trophy className="h-6 w-6 text-yellow-300" />
+                </div>
+                <div>
+                  <div className="text-white/90 text-sm font-medium mb-1">GRAND FINAL</div>
+                  <h3 className="text-2xl font-bold text-white">Championship Match</h3>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex-1 text-center">
+                    <div className="text-sm uppercase tracking-wide text-white/70 mb-1">1st Place</div>
+                    <div className="text-2xl font-bold text-white mb-1">Standings</div>
+                  </div>
+                  <div className="text-white/80 text-xl font-bold">VS</div>
+                  <div className="flex-1 text-center">
+                    <div className="text-sm uppercase tracking-wide text-white/70 mb-1">2nd Place</div>
+                    <div className="text-2xl font-bold text-white mb-1">Standings</div>
+                  </div>
+                </div>
+                <div className="mt-4 text-sm text-white/80">
+                  Final will be scheduled automatically once all fixtures are completed and standings are recalculated.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tournament Header - Desktop only (mobile uses the hero) */}
+        <Card className="hidden md:block bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 rounded-2xl">
+          <CardHeader>
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -767,8 +836,8 @@ export default function TournamentDetailsPage() {
               </div>
             )}
           </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
 
       {/* Registered Teams */}
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 rounded-2xl">
@@ -832,22 +901,34 @@ export default function TournamentDetailsPage() {
           {tournament.teams && tournament.teams.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {tournament.teams.map((tournamentTeam) => (
-                <div
+                <Link
                   key={tournamentTeam.id}
-                  className="p-4 bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-200/50 hover:shadow-lg transition-all hover:scale-105"
+                  href={`/teams/${tournamentTeam.team_id}`}
+                  aria-label={`View team ${tournamentTeam.team?.name || 'details'}`}
+                  className="block"
                 >
-                  <div className="flex items-center gap-3">
-                    {tournamentTeam.team?.color && (
-                      <div
-                        className="w-5 h-5 rounded-full shadow-md ring-2 ring-white"
-                        style={{ backgroundColor: tournamentTeam.team.color }}
-                      />
-                    )}
-                    <span className="text-gray-900 font-semibold text-lg">
-                      {tournamentTeam.team?.name || 'Unknown Team'}
-                    </span>
+                  <div className="p-4 bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-200/50 hover:shadow-lg transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {tournamentTeam.team?.color && (
+                          <div
+                            className="w-5 h-5 rounded-full shadow-md ring-2 ring-white shrink-0"
+                            style={{ backgroundColor: tournamentTeam.team.color }}
+                          />
+                        )}
+                        <span className="text-gray-900 font-semibold text-lg truncate">
+                          {tournamentTeam.team?.name || 'Unknown Team'}
+                        </span>
+                      </div>
+
+                      <span className="text-xs sm:text-sm text-gray-500 shrink-0">
+                        {tournamentTeam.team?.captain?.user_profile?.name
+                          ? `C: ${tournamentTeam.team.captain.user_profile.name}`
+                          : ''}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
@@ -898,27 +979,31 @@ export default function TournamentDetailsPage() {
             <div className="space-y-4">
               {groupMatches.map((match) => (
                 <Link key={match.id} href={`/matches/${match.id}`} className="block">
-                  <div className="p-5 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200/50 hover:from-blue-100 hover:to-purple-100 transition-all cursor-pointer shadow-sm hover:shadow-md">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="font-bold text-gray-900 text-lg">{match.teamA_name || 'Team A'}</span>
+                  <div className="p-4 sm:p-5 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200/50 hover:from-blue-100 hover:to-purple-100 transition-all cursor-pointer shadow-sm hover:shadow-md">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="font-bold text-gray-900 text-base sm:text-lg truncate">
+                            {match.teamA_name || 'Team A'}
+                          </span>
                           <span className="text-gray-500 font-semibold">vs</span>
-                          <span className="font-bold text-gray-900 text-lg">{match.teamB_name || 'Team B'}</span>
+                          <span className="font-bold text-gray-900 text-base sm:text-lg truncate">
+                            {match.teamB_name || 'Team B'}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
                             <span>{new Date(match.date).toLocaleDateString()}</span>
                           </div>
                           {match.round && (
-                            <Badge variant="outline" className="text-xs bg-white/50">
+                            <Badge variant="outline" className="text-xs bg-white/50 whitespace-nowrap">
                               {match.round.replace('_', ' ')}
                             </Badge>
                           )}
                           <Badge
                             variant="outline"
-                            className={`text-xs ${
+                            className={`text-xs whitespace-nowrap ${
                               match.status === 'completed' ? 'bg-green-100 text-green-700 border-green-300' :
                               match.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-300' :
                               'bg-gray-100 text-gray-700 border-gray-300'
@@ -928,7 +1013,8 @@ export default function TournamentDetailsPage() {
                           </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
+
+                      <div className="text-right self-end sm:self-auto">
                         {match.status === 'completed' ? (
                           <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                             {(match as any).score_teama || match.score_teamA || 0} - {(match as any).score_teamb || match.score_teamB || 0}
@@ -989,84 +1075,6 @@ export default function TournamentDetailsPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Tournament Matches - If no final match yet, show all */}
-      {!finalMatch && (
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-gray-900 flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Tournament Matches
-              <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
-                {tournamentMatches.length} {tournamentMatches.length === 1 ? 'match' : 'matches'}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {tournamentMatches.length > 0 ? (
-              <div className="space-y-4">
-                {tournamentMatches.map((match) => (
-                  <Link key={match.id} href={`/matches/${match.id}`} className="block">
-                    <div className="p-5 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200/50 hover:from-blue-100 hover:to-purple-100 transition-all cursor-pointer shadow-sm hover:shadow-md">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-bold text-gray-900 text-lg">{match.teamA_name || 'Team A'}</span>
-                            <span className="text-gray-500 font-semibold">vs</span>
-                            <span className="font-bold text-gray-900 text-lg">{match.teamB_name || 'Team B'}</span>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(match.date).toLocaleDateString()}</span>
-                            </div>
-                            {match.round && (
-                              <Badge variant="outline" className="text-xs bg-white/50">
-                                {match.round.replace('_', ' ')}
-                              </Badge>
-                            )}
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                match.status === 'completed' ? 'bg-green-100 text-green-700 border-green-300' :
-                                match.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-300' :
-                                'bg-gray-100 text-gray-700 border-gray-300'
-                              }`}
-                            >
-                              {match.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          {match.status === 'completed' ? (
-                            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                              {(match as any).score_teama || match.score_teamA || 0} - {(match as any).score_teamb || match.score_teamB || 0}
-                            </div>
-                          ) : (
-                            <div className="text-sm text-gray-500 font-medium">
-                              {new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">No matches generated yet</p>
-              <p className="text-sm text-gray-500">
-                {isAdmin && tournament.teams && tournament.teams.length >= 2 && groupMatches.length === 0
-                  ? 'Click "Generate Fixtures" above to create matches for this tournament.'
-                  : 'Fixtures will appear here once they are generated.'}
-              </p>
-            </div>
-            )}
-        </CardContent>
-      </Card>
       )}
 
       {/* Standings */}
