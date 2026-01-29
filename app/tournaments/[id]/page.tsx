@@ -492,7 +492,7 @@ export default function TournamentDetailsPage() {
   const registeredTeamIds = tournament.teams?.map(t => t.team_id) || []
   const teamsNotRegistered = availableTeams.filter(t => !registeredTeamIds.includes(t.id))
 
-  // Find final match and winner
+  // Find final match and winners
   // First check for explicit 'final' round match
   // If tournament is manually marked as 'completed' but has no explicit final,
   // treat the last completed match as the final to show the winner banner
@@ -716,8 +716,8 @@ export default function TournamentDetailsPage() {
                           <span>{new Date(finalMatch.date).toLocaleDateString()}</span>
                         </div>
                         <Badge className={`${finalMatch.status === 'completed' ? 'bg-green-500/30 text-white border-green-300/50' :
-                            finalMatch.status === 'in_progress' ? 'bg-blue-500/30 text-white border-blue-300/50' :
-                              'bg-white/20 text-white border-white/30'
+                          finalMatch.status === 'in_progress' ? 'bg-blue-500/30 text-white border-blue-300/50' :
+                            'bg-white/20 text-white border-white/30'
                           }`}>
                           {finalMatch.status}
                         </Badge>
@@ -1011,8 +1011,8 @@ export default function TournamentDetailsPage() {
                             <Badge
                               variant="outline"
                               className={`text-xs whitespace-nowrap ${match.status === 'completed' ? 'bg-green-100 text-green-700 border-green-300' :
-                                  match.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-300' :
-                                    'bg-gray-100 text-gray-700 border-gray-300'
+                                match.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                  'bg-gray-100 text-gray-700 border-gray-300'
                                 }`}
                             >
                               {match.status}
