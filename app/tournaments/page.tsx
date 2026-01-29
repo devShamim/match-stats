@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { useUser } from '@/context/UserContext'
 import { useToast } from '@/components/ui/toast'
 import { Tournament } from '@/types'
-import { Plus, Trophy, Search, Loader2, Calendar, Users } from 'lucide-react'
+import { Plus, Trophy, Search, Loader2, Calendar, Users, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function TournamentsPage() {
@@ -71,6 +71,35 @@ export default function TournamentsPage() {
         return 'bg-gray-500/20 text-gray-400'
       default:
         return 'bg-gray-500/20 text-gray-400'
+    }
+  }
+
+  const handleCompleteTournament = async (e: React.MouseEvent, tournamentId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!confirm('Are you sure you want to mark this tournament as completed?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'completed' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to complete tournament')
+      }
+
+      showToast('Tournament marked as completed', 'success')
+      fetchTournaments()
+    } catch (error: any) {
+      console.error('Error completing tournament:', error)
+      showToast('Failed to complete tournament', 'error')
     }
   }
 
@@ -191,6 +220,17 @@ export default function TournamentsPage() {
                       </div>
                     )}
                   </div>
+                  {isAdmin && tournament.status !== 'completed' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 w-full text-green-600 border-green-300 hover:bg-green-50"
+                      onClick={(e) => handleCompleteTournament(e, tournament.id)}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Mark Complete
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </Link>
